@@ -175,43 +175,32 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 var store = { sessions: [], tasks: { daily: [], weekly: [] }, runningStart: null };
 var running = false, startMs = null, timerInterval = null, currentPeriod = 'daily';
 
-// ── Firebase config (Firestore REST API — no SDK needed, works in any browser) ──
-// Using a public demo project. Replace PROJECT_ID + COLLECTION if you want your own.
+// ── Firebase config ──
 var PROJECT_ID = 'calisma-takip-74fd5';
-var BASE_URL   = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents/';
-var DOC_ID     = 'shared_data'; // single document, everyone reads/writes this
+var FS_URL = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents/data/shared';
 
 // Firestore REST helpers
 async function fsGet() {
   try {
-    var r = await fetch(BASE_URL + DOC_ID);
+    var r = await fetch(FS_URL);
     if (!r.ok) return null;
     var d = await r.json();
-    return d.fields ? {
-      sessions: JSON.parse(d.fields.sessions.stringValue || '[]'),
-      tasks:    JSON.parse(d.fields.tasks.stringValue    || '{"daily":[],"weekly":[]}'),
-      runningStart: d.fields.runningStart ? JSON.parse(d.fields.runningStart.stringValue) : null
-    } : null;
+    if (!d.fields) return null;
+    return {
+      sessions:     JSON.parse(d.fields.sessions.stringValue     || '[]'),
+      tasks:        JSON.parse(d.fields.tasks.stringValue        || '{"daily":[],"weekly":[]}'),
+      runningStart: JSON.parse(d.fields.runningStart.stringValue || 'null')
+    };
   } catch(e){ return null; }
 }
 async function fsPatch(data) {
   try {
-    await fetch(BASE_URL + DOC_ID + '?currentDocument.exists=false', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ fields:{
-        sessions:     { stringValue: JSON.stringify(data.sessions) },
-        tasks:        { stringValue: JSON.stringify(data.tasks) },
-        runningStart: { stringValue: JSON.stringify(data.runningStart) }
-      }})
-    }).catch(()=>{});
-    await fetch(BASE_URL + DOC_ID, {
-      method:'PATCH', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ fields:{
-        sessions:     { stringValue: JSON.stringify(data.sessions) },
-        tasks:        { stringValue: JSON.stringify(data.tasks) },
-        runningStart: { stringValue: JSON.stringify(data.runningStart) }
-      }})
-    });
+    var body = JSON.stringify({ fields: {
+      sessions:     { stringValue: JSON.stringify(data.sessions) },
+      tasks:        { stringValue: JSON.stringify(data.tasks) },
+      runningStart: { stringValue: JSON.stringify(data.runningStart) }
+    }});
+    await fetch(FS_URL, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: body });
   } catch(e){}
 }
 
