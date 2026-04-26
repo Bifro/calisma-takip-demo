@@ -24,7 +24,6 @@
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;overscroll-behavior:none}
 .app{display:flex;flex-direction:column;min-height:100dvh;max-width:480px;margin:0 auto}
-
 .header{padding:1.25rem 1.25rem 0;display:flex;align-items:center;justify-content:space-between}
 .header-title{font-size:13px;font-weight:500;color:var(--text2);letter-spacing:.5px;text-transform:uppercase}
 .header-right{display:flex;align-items:center;gap:10px}
@@ -36,32 +35,42 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .header-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);transition:background .3s}
 .header-dot.running{background:var(--green);box-shadow:0 0 0 3px var(--green-dim);animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-
 .tabs{display:flex;padding:1rem 1.25rem 0;border-bottom:1px solid var(--border);margin-top:.75rem}
-.tab{flex:1;padding:.6rem 0;text-align:center;font-size:13px;font-weight:500;color:var(--text3);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:color .2s,border-color .2s;font-family:var(--sans)}
+.tab{flex:1;padding:.6rem 0;text-align:center;font-size:12px;font-weight:500;color:var(--text3);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:color .2s,border-color .2s;font-family:var(--sans)}
 .tab.active{color:var(--text);border-bottom-color:var(--green)}
-
 .content{flex:1;padding:1.25rem;overflow-y:auto}
-.section{display:none}
-.section.active{display:block}
+.section{display:none}.section.active{display:block}
 
-.timer-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:2rem 1.5rem;text-align:center;margin-bottom:1rem}
-.timer-day{font-size:12px;color:var(--text2);margin-bottom:1.25rem;letter-spacing:.3px}
-.timer-display{font-family:var(--mono);font-size:clamp(40px,12vw,56px);font-weight:400;color:var(--text);letter-spacing:4px;margin-bottom:1.5rem;transition:color .3s}
+/* timer */
+.timer-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem 1.5rem 1.25rem;text-align:center;margin-bottom:1rem}
+.timer-day{font-size:12px;color:var(--text2);margin-bottom:1rem;letter-spacing:.3px}
+.timer-display{font-family:var(--mono);font-size:clamp(40px,12vw,56px);font-weight:400;color:var(--text);letter-spacing:4px;margin-bottom:1.25rem;transition:color .3s}
 .timer-display.running{color:var(--green)}
-.timer-btns{display:flex;gap:10px;justify-content:center}
+.timer-btns{display:flex;gap:10px;justify-content:center;margin-bottom:1.25rem}
 .btn-start{background:var(--green);color:#fff;border:none;padding:12px 32px;border-radius:var(--r-sm);font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:opacity .2s}
 .btn-stop{background:var(--red);color:#fff;border:none;padding:12px 32px;border-radius:var(--r-sm);font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:opacity .2s}
 .btn-start:disabled,.btn-stop:disabled{opacity:.3;cursor:default}
 .btn-start:not(:disabled):active,.btn-stop:not(:disabled):active{opacity:.8;transform:scale(.97)}
 
+/* today info box inside timer card */
+.today-info{border-top:1px solid var(--border);padding-top:1rem;text-align:left}
+.today-info-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
+.today-info-row:last-child{margin-bottom:0}
+.today-info-icon{font-size:12px;color:var(--text3);min-width:16px;margin-top:1px}
+.today-info-label{font-size:11px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+.today-info-val{font-size:13px;color:var(--text2)}
+.today-info-val.goal{font-family:var(--mono);color:var(--green)}
+.today-task-list{display:flex;flex-direction:column;gap:3px;margin-top:3px}
+.today-task-chip{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px}
+.today-task-chip .dot{width:5px;height:5px;border-radius:50%;background:var(--text3);flex-shrink:0}
+.today-task-chip .dot.done{background:var(--green)}
+.today-task-chip.done-txt{text-decoration:line-through;color:var(--text3)}
+
 .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem}
 .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);padding:.9rem .5rem;text-align:center}
 .stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
 .stat-value{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--text)}
-
 .sec-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
-
 .session-list{display:flex;flex-direction:column;gap:6px}
 .session-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 14px}
 .session-date{font-size:13px;color:var(--text2)}
@@ -70,7 +79,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .btn-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:2px 4px;line-height:1}
 .btn-del:active{color:var(--red)}
 .empty{font-size:13px;color:var(--text3);text-align:center;padding:2rem 0}
-
 .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:1.25rem}
 .wday{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 3px;text-align:center}
 .wday.today{background:var(--green-dim);border-color:var(--green)}
@@ -78,7 +86,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .wday.today .wday-name{color:var(--green)}
 .wday-val{font-family:var(--mono);font-size:11px;color:var(--text2)}
 .wday.today .wday-val{color:var(--green)}
-
 .period-tabs{display:flex;gap:6px;margin-bottom:1rem}
 .ptab{padding:6px 16px;font-size:12px;font-weight:500;border:1px solid var(--border2);border-radius:99px;background:none;color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .2s}
 .ptab.active{background:var(--text);color:var(--bg);border-color:transparent}
@@ -93,20 +100,75 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .task-cb{width:18px;height:18px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
 .task-text{flex:1;font-size:14px;color:var(--text)}
 .task-text.done{text-decoration:line-through;color:var(--text3)}
-
 .loading-overlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;z-index:100;transition:opacity .4s}
 .loading-overlay.hidden{opacity:0;pointer-events:none}
 .loading-spinner{width:28px;height:28px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-text{font-size:13px;color:var(--text2)}
 
-/* info box */
-.info-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;margin-bottom:1.25rem;font-size:12px;color:var(--text2);line-height:1.6}
-.info-box b{color:var(--text);font-weight:500}
+/* ── TAKVİM ── */
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cal-nav{background:none;border:1px solid var(--border2);color:var(--text2);width:32px;height:32px;border-radius:var(--r-sm);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;font-family:var(--sans)}
+.cal-nav:active{background:var(--bg3)}
+.cal-month-label{font-size:14px;font-weight:500;color:var(--text)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:1rem}
+.cal-day-name{text-align:center;font-size:9px;color:var(--text3);text-transform:uppercase;padding:4px 0;letter-spacing:.4px}
+.cal-day{min-height:52px;border-radius:var(--r-sm);padding:4px;cursor:pointer;border:1px solid transparent;transition:all .15s;position:relative;background:var(--bg2)}
+.cal-day:active{opacity:.8}
+.cal-day.empty{background:transparent;cursor:default;border:none}
+.cal-day.today{border-color:var(--green)}
+.cal-day.goal-met{background:var(--green-dim);border-color:var(--green)}
+.cal-day.goal-missed{background:var(--red-dim);border-color:var(--red)}
+.cal-day.selected{outline:2px solid #fff;outline-offset:1px}
+.cal-day-num{font-size:11px;font-weight:500;color:var(--text2);margin-bottom:2px}
+.cal-day.today .cal-day-num{color:var(--green)}
+.cal-day.goal-met .cal-day-num{color:var(--green)}
+.cal-day.goal-missed .cal-day-num{color:var(--red)}
+.cal-day-dur{font-family:var(--mono);font-size:9px;color:var(--text3);line-height:1.2}
+.cal-day.goal-met .cal-day-dur{color:var(--green)}
+.cal-day.goal-missed .cal-day-dur{color:var(--red)}
+.cal-day-dots{margin-top:3px;display:flex;flex-wrap:wrap;gap:2px}
+.cal-dot{width:5px;height:5px;border-radius:50%;background:var(--text3);flex-shrink:0}
+.cal-dot.done{background:var(--green)}
+
+/* panel */
+.day-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 14px 12px;margin-bottom:1rem;display:none}
+.day-panel.visible{display:block}
+.day-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.day-panel-title{font-size:14px;font-weight:500;color:var(--text)}
+.day-panel-close{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1}
+.day-panel-stat{font-size:12px;color:var(--text3);margin-bottom:12px;font-family:var(--mono)}
+.day-panel-stat span{color:var(--green)}
+
+/* goals block */
+.goals-block{background:var(--bg3);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px}
+.goals-block-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.goal-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.goal-row:last-child{margin-bottom:0}
+.goal-row-label{font-size:12px;color:var(--text2);flex:1}
+.goal-input{width:52px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-sm);padding:4px 8px;color:var(--text);font-size:13px;font-family:var(--mono);text-align:center;outline:none}
+.goal-input:focus{border-color:var(--green)}
+.goal-unit{font-size:12px;color:var(--text3);min-width:28px}
+.goal-row-readonly{font-family:var(--mono);font-size:13px;color:var(--text2);min-width:52px;text-align:right}
+.goal-bar-wrap{height:3px;background:var(--bg2);border-radius:99px;overflow:hidden;margin-top:8px}
+.goal-bar-fill{height:100%;border-radius:99px;background:var(--green);transition:width .4s}
+
+/* panel task sections */
+.panel-section{margin-bottom:10px}
+.panel-section-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.panel-task-list{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
+.panel-task-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg3);border-radius:var(--r-sm)}
+.panel-task-cb{width:15px;height:15px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
+.panel-task-text{flex:1;font-size:13px;color:var(--text)}
+.panel-task-text.done{text-decoration:line-through;color:var(--text3)}
+.panel-add-row{display:flex;gap:6px}
+.panel-add-row input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:7px 10px;color:var(--text);font-size:13px;font-family:var(--sans);outline:none}
+.panel-add-row input:focus{border-color:var(--green)}
+.panel-add-row input::placeholder{color:var(--text3)}
+.btn-add-sm{background:var(--green);color:#fff;border:none;border-radius:var(--r-sm);padding:7px 12px;font-size:12px;cursor:pointer;font-family:var(--sans);white-space:nowrap}
 </style>
 </head>
 <body>
-
 <div class="loading-overlay" id="loadingOverlay">
   <div class="loading-spinner"></div>
   <div class="loading-text">Veriler yükleniyor...</div>
@@ -116,21 +178,19 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
   <div class="header">
     <span class="header-title">Çalışma Takip</span>
     <div class="header-right">
-      <div class="sync-badge" id="syncBadge">
-        <div class="sync-dot"></div>
-        <span id="syncText">bağlanıyor</span>
-      </div>
+      <div class="sync-badge" id="syncBadge"><div class="sync-dot"></div><span id="syncText">bağlanıyor</span></div>
       <div class="header-dot" id="headerDot"></div>
     </div>
   </div>
-
   <div class="tabs">
     <button class="tab active" onclick="switchTab('timer',this)">Kronometre</button>
     <button class="tab" onclick="switchTab('stats',this)">İstatistik</button>
     <button class="tab" onclick="switchTab('tasks',this)">Görevler</button>
+    <button class="tab" onclick="switchTab('calendar',this)">Takvim</button>
   </div>
 
   <div class="content">
+    <!-- TIMER -->
     <div id="tab-timer" class="section active">
       <div class="timer-block">
         <div class="timer-day" id="timerDay"></div>
@@ -139,6 +199,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
           <button class="btn-start" id="btnStart" onclick="startTimer()">▶ Başlat</button>
           <button class="btn-stop" id="btnStop" onclick="stopTimer()" disabled>■ Kaydet</button>
         </div>
+        <div class="today-info" id="todayInfo"></div>
       </div>
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-label">Bugün</div><div class="stat-value" id="s-today">—</div></div>
@@ -149,6 +210,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
       <div class="session-list" id="recentList"></div>
     </div>
 
+    <!-- STATS -->
     <div id="tab-stats" class="section">
       <div class="sec-label" style="margin-bottom:10px">Bu haftanın dağılımı</div>
       <div class="week-grid" id="weekGrid"></div>
@@ -156,6 +218,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
       <div class="session-list" id="allList"></div>
     </div>
 
+    <!-- TASKS -->
     <div id="tab-tasks" class="section">
       <div class="period-tabs">
         <button class="ptab active" onclick="switchPeriod('daily',this)">Günlük</button>
@@ -167,110 +230,173 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
       </div>
       <div class="task-list" id="taskList"></div>
     </div>
+
+    <!-- CALENDAR -->
+    <div id="tab-calendar" class="section">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="calPrev()">‹</button>
+        <span class="cal-month-label" id="calMonthLabel"></span>
+        <button class="cal-nav" onclick="calNext()">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+
+      <!-- Seçili gün paneli -->
+      <div class="day-panel" id="dayPanel">
+        <div class="day-panel-head">
+          <span class="day-panel-title" id="dayPanelTitle"></span>
+          <button class="day-panel-close" onclick="closePanel()">✕</button>
+        </div>
+        <div class="day-panel-stat" id="dayPanelStat"></div>
+
+        <!-- Hedefler -->
+        <div class="goals-block">
+          <div class="goals-block-title">Hedefler</div>
+          <div class="goal-row">
+            <span class="goal-row-label">Günlük hedef</span>
+            <input type="number" class="goal-input" id="dayGoalInput" min="0" max="24" placeholder="0" onchange="saveDayGoal()"/>
+            <span class="goal-unit">saat</span>
+          </div>
+          <div class="goal-row">
+            <span class="goal-row-label">Haftalık hedef</span>
+            <span class="goal-row-readonly" id="weekGoalReadonly">—</span>
+            <span class="goal-unit">saat</span>
+          </div>
+          <div class="goal-bar-wrap"><div class="goal-bar-fill" id="weekGoalFill" style="width:0%"></div></div>
+        </div>
+
+        <!-- Günlük görevler -->
+        <div class="panel-section">
+          <div class="panel-section-label">Günlük görevler</div>
+          <div class="panel-task-list" id="panelDayTaskList"></div>
+          <div class="panel-add-row">
+            <input type="text" id="panelDayTaskInput" placeholder="Bu güne görev ekle..."/>
+            <button class="btn-add-sm" onclick="addDayTask()">+ Ekle</button>
+          </div>
+        </div>
+
+        <!-- Haftalık görevler -->
+        <div class="panel-section">
+          <div class="panel-section-label">Haftalık görevler</div>
+          <div class="panel-task-list" id="panelWeekTaskList"></div>
+          <div class="panel-add-row">
+            <input type="text" id="panelWeekTaskInput" placeholder="Bu haftaya görev ekle..."/>
+            <button class="btn-add-sm" onclick="addWeekTask()">+ Ekle</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-// ── State ──
-var store = { sessions: [], tasks: { daily: [], weekly: [] }, runningStart: null };
-var running = false, startMs = null, timerInterval = null, currentPeriod = 'daily';
+// store.dayTasks:   { "2025-04-21": [{text,done},...] }
+// store.weekTasks:  { "2025-04-14": [{text,done},...] }  key=monday
+// store.dayGoals:   { "2025-04-21": 3.5 }  hours
+// store.weekGoals is removed — calculated from dayGoals
+var store = {
+  sessions:[], tasks:{daily:[],weekly:[]},
+  dayTasks:{}, weekTasks:{},
+  dayGoals:{},
+  runningStart:null
+};
+var running=false, startMs=null, timerInterval=null, currentPeriod='daily';
+var calYear, calMonth, selectedDay=null;
 
-// ── Firebase config ──
-var PROJECT_ID = 'calisma-takip-74fd5';
-var FS_URL = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents/data/shared';
+// ── Firebase ──
+var PROJECT_ID='calisma-takip-74fd5';
+var FS_URL='https://firestore.googleapis.com/v1/projects/'+PROJECT_ID+'/databases/(default)/documents/data/shared';
 
-// Firestore REST helpers
-async function fsGet() {
-  try {
-    var r = await fetch(FS_URL);
-    if (!r.ok) return null;
-    var d = await r.json();
-    if (!d.fields) return null;
-    return {
-      sessions:     JSON.parse(d.fields.sessions.stringValue     || '[]'),
-      tasks:        JSON.parse(d.fields.tasks.stringValue        || '{"daily":[],"weekly":[]}'),
-      runningStart: JSON.parse(d.fields.runningStart.stringValue || 'null')
+async function fsGet(){
+  try{
+    var r=await fetch(FS_URL); if(!r.ok)return null;
+    var d=await r.json(); if(!d.fields)return null;
+    function gf(k){return d.fields[k]&&d.fields[k].stringValue||null}
+    return{
+      sessions:    JSON.parse(gf('sessions')    ||'[]'),
+      tasks:       JSON.parse(gf('tasks')        ||'{"daily":[],"weekly":[]}'),
+      dayTasks:    JSON.parse(gf('dayTasks')     ||'{}'),
+      weekTasks:   JSON.parse(gf('weekTasks')    ||'{}'),
+      dayGoals:    JSON.parse(gf('dayGoals')     ||'{}'),
+      runningStart:JSON.parse(gf('runningStart') ||'null')
     };
-  } catch(e){ return null; }
+  }catch(e){return null;}
 }
-async function fsPatch(data) {
-  try {
-    var body = JSON.stringify({ fields: {
-      sessions:     { stringValue: JSON.stringify(data.sessions) },
-      tasks:        { stringValue: JSON.stringify(data.tasks) },
-      runningStart: { stringValue: JSON.stringify(data.runningStart) }
-    }});
-    await fetch(FS_URL, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: body });
-  } catch(e){}
-}
-
-// ── localStorage fallback (works offline + as cache) ──
-function lcSave() { try { localStorage.setItem('ct_v2', JSON.stringify(store)); } catch(e){} }
-function lcLoad() { try { var s=JSON.parse(localStorage.getItem('ct_v2')||'null'); return s; } catch(e){ return null; } }
-
-// ── Sync ──
-function setSyncState(state) {
-  var badge=document.getElementById('syncBadge'), text=document.getElementById('syncText');
-  badge.className='sync-badge '+state;
-  text.textContent = state==='ok'?'senkron' : state==='syncing'?'kaydediliyor' : 'çevrimdışı';
+async function fsPatch(data){
+  try{
+    await fetch(FS_URL,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{
+      sessions:    {stringValue:JSON.stringify(data.sessions)},
+      tasks:       {stringValue:JSON.stringify(data.tasks)},
+      dayTasks:    {stringValue:JSON.stringify(data.dayTasks||{})},
+      weekTasks:   {stringValue:JSON.stringify(data.weekTasks||{})},
+      dayGoals:    {stringValue:JSON.stringify(data.dayGoals||{})},
+      runningStart:{stringValue:JSON.stringify(data.runningStart)}
+    }})});
+  }catch(e){}
 }
 
-async function loadStore() {
-  // Try cloud first, fall back to localStorage
-  var cached = lcLoad();
-  if (cached) { store = cached; setSyncState('ok'); }
+function lcSave(){try{localStorage.setItem('ct_v5',JSON.stringify(store));}catch(e){}}
+function lcLoad(){try{return JSON.parse(localStorage.getItem('ct_v5')||'null');}catch(e){return null;}}
 
+function setSyncState(st){
+  var b=document.getElementById('syncBadge'),t=document.getElementById('syncText');
+  b.className='sync-badge '+st;
+  t.textContent=st==='ok'?'senkron':st==='syncing'?'kaydediliyor':'çevrimdışı';
+}
+function normalizeStore(){
+  store.tasks=store.tasks||{daily:[],weekly:[]};
+  store.tasks.daily=store.tasks.daily||[];
+  store.tasks.weekly=store.tasks.weekly||[];
+  store.dayTasks=store.dayTasks||{};
+  store.weekTasks=store.weekTasks||{};
+  store.dayGoals=store.dayGoals||{};
+}
+async function loadStore(){
+  var cached=lcLoad(); if(cached){store=cached;normalizeStore();setSyncState('ok');}
   setSyncState('syncing');
-  var remote = await fsGet();
-  if (remote) {
-    store = remote;
-    if (!store.tasks) store.tasks = {daily:[],weekly:[]};
-    if (!store.tasks.daily)  store.tasks.daily  = [];
-    if (!store.tasks.weekly) store.tasks.weekly = [];
-    lcSave();
-    setSyncState('ok');
-  } else {
-    setSyncState(cached ? 'ok' : 'err');
-  }
+  var remote=await fsGet();
+  if(remote){store=remote;normalizeStore();lcSave();setSyncState('ok');}
+  else setSyncState(cached?'ok':'err');
 }
-
-async function syncToCloud() {
-  setSyncState('syncing');
-  lcSave();
-  await fsPatch(store);
-  setSyncState('ok');
-}
+async function syncToCloud(){setSyncState('syncing');lcSave();await fsPatch(store);setSyncState('ok');}
 
 // ── Date helpers ──
-function todayStr(){ return new Date().toISOString().slice(0,10) }
-function weekOf(d){ var dt=new Date(d+'T00:00:00'), day=dt.getDay(), diff=day===0?-6:1-day; dt.setDate(dt.getDate()+diff); return dt.toISOString().slice(0,10) }
-function monthOf(d){ return d.slice(0,7) }
-function fmtDur(s){ s=Math.round(s); var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60; if(h>0)return h+'s '+m+'d'; if(m>0)return m+'d '+sec+'sn'; return sec+'sn' }
-function fmtHMS(s){ s=Math.round(s); var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60; return pad(h)+':'+pad(m)+':'+pad(sec) }
-function pad(n){ return String(n).padStart(2,'0') }
-function fmtDate(str){ var d=new Date(str+'T00:00:00'); return d.toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'}) }
+function todayStr(){return new Date().toISOString().slice(0,10)}
+function weekOf(d){var dt=new Date(d+'T00:00:00'),day=dt.getDay(),diff=day===0?-6:1-day;dt.setDate(dt.getDate()+diff);return dt.toISOString().slice(0,10)}
+function monthOf(d){return d.slice(0,7)}
+function fmtDur(s){s=Math.round(s);var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;if(h>0)return h+'s '+m+'d';if(m>0)return m+'d '+sec+'sn';return sec+'sn'}
+function fmtHMS(s){s=Math.round(s);var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return pad(h)+':'+pad(m)+':'+pad(sec)}
+function pad(n){return String(n).padStart(2,'0')}
+function fmtDateLong(str){var d=new Date(str+'T00:00:00');return d.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})}
+function fmtDateShort(str){var d=new Date(str+'T00:00:00');return d.toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'})}
+function secsForDay(d){return store.sessions.filter(function(x){return x.date===d}).reduce(function(a,b){return a+b.duration},0)}
+function secsForWeek(wk){return store.sessions.filter(function(x){return weekOf(x.date)===wk}).reduce(function(a,b){return a+b.duration},0)}
+
+// weekly goal = sum of dayGoals for all 7 days of that week
+function weekGoalSecs(wk){
+  var total=0;
+  for(var i=0;i<7;i++){
+    var d=new Date(wk+'T00:00:00');d.setDate(d.getDate()+i);
+    var ds=d.toISOString().slice(0,10);
+    total+=(store.dayGoals[ds]||0)*3600;
+  }
+  return total;
+}
+function weekGoalHours(wk){return weekGoalSecs(wk)/3600;}
 
 // ── Timer ──
-function currentElapsed(){ return (!running||!startMs)?0:Math.floor((Date.now()-startMs)/1000) }
-
+function currentElapsed(){return(!running||!startMs)?0:Math.floor((Date.now()-startMs)/1000)}
 async function startTimer(){
-  if(running)return;
-  running=true; startMs=Date.now();
-  store.runningStart=startMs;
+  if(running)return; running=true; startMs=Date.now(); store.runningStart=startMs;
   document.getElementById('btnStart').disabled=true;
   document.getElementById('btnStop').disabled=false;
   document.getElementById('timerDisplay').classList.add('running');
   document.getElementById('headerDot').classList.add('running');
-  timerInterval=setInterval(tick,1000);
-  await syncToCloud();
+  timerInterval=setInterval(tick,1000); await syncToCloud();
 }
-function tick(){ document.getElementById('timerDisplay').textContent=fmtHMS(currentElapsed()) }
-
+function tick(){document.getElementById('timerDisplay').textContent=fmtHMS(currentElapsed())}
 async function stopTimer(){
-  if(!running)return;
-  clearInterval(timerInterval);
-  var dur=currentElapsed(); running=false;
-  store.runningStart=null;
+  if(!running)return; clearInterval(timerInterval);
+  var dur=currentElapsed(); running=false; store.runningStart=null;
   store.sessions.push({date:todayStr(),duration:dur,ts:Date.now()});
   startMs=null;
   document.getElementById('btnStart').disabled=false;
@@ -278,78 +404,222 @@ async function stopTimer(){
   document.getElementById('timerDisplay').textContent='00:00:00';
   document.getElementById('timerDisplay').classList.remove('running');
   document.getElementById('headerDot').classList.remove('running');
-  await syncToCloud();
-  renderAll();
+  await syncToCloud(); renderAll();
 }
-
-// ── Stats ──
 function calcStats(){
-  var t=todayStr(), wk=weekOf(t), mo=monthOf(t), day=0, week=0, month=0;
-  store.sessions.forEach(function(x){ if(x.date===t)day+=x.duration; if(weekOf(x.date)===wk)week+=x.duration; if(monthOf(x.date)===mo)month+=x.duration; });
+  var t=todayStr(),wk=weekOf(t),mo=monthOf(t),day=0,week=0,month=0;
+  store.sessions.forEach(function(x){if(x.date===t)day+=x.duration;if(weekOf(x.date)===wk)week+=x.duration;if(monthOf(x.date)===mo)month+=x.duration;});
   return{day:day,week:week,month:month};
 }
 
-// ── Render ──
+// ── Render timer ──
 function renderTimerTab(){
+  var t=todayStr();
   var d=new Date();
   document.getElementById('timerDay').textContent=d.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   var c=calcStats();
   document.getElementById('s-today').textContent=c.day?fmtDur(c.day):'—';
   document.getElementById('s-week').textContent=c.week?fmtDur(c.week):'—';
   document.getElementById('s-month').textContent=c.month?fmtDur(c.month):'—';
+
+  // today info box
+  var dayGoalH=store.dayGoals[t]||0;
+  var dayTasks=(store.dayTasks[t]||[]);
+  var wk=weekOf(t);
+  var weekTasks=(store.weekTasks[wk]||[]);
+  var allTasks=dayTasks.concat(weekTasks);
+
+  var goalHtml='';
+  if(dayGoalH>0){
+    goalHtml='<div class="today-info-val goal">'+dayGoalH+' saat hedef</div>';
+  } else {
+    goalHtml='<div class="today-info-val">Çalışma hedefi yok</div>';
+  }
+
+  var taskHtml='';
+  if(allTasks.length){
+    taskHtml='<div class="today-task-list">'+allTasks.map(function(tk){
+      return '<div class="today-task-chip'+(tk.done?' done-txt':'')+'"><div class="dot'+(tk.done?' done':'')+'"></div>'+esc(tk.text)+'</div>';
+    }).join('')+'</div>';
+  } else {
+    taskHtml='<div class="today-info-val">Görev yok</div>';
+  }
+
+  document.getElementById('todayInfo').innerHTML=
+    '<div class="today-info-row"><div class="today-info-icon">◎</div><div><div class="today-info-label">Hedef</div>'+goalHtml+'</div></div>'
+   +'<div class="today-info-row"><div class="today-info-icon">✓</div><div><div class="today-info-label">Görevler</div>'+taskHtml+'</div></div>';
+
   var el=document.getElementById('recentList');
   var recent=store.sessions.slice().reverse().slice(0,6);
   if(!recent.length){el.innerHTML='<div class="empty">Henüz seans yok</div>';return}
-  el.innerHTML=recent.map(function(x,i){
-    var ri=store.sessions.length-1-i;
-    return '<div class="session-item"><span class="session-date">'+fmtDate(x.date)+'</span><div class="session-right"><span class="session-dur">'+fmtDur(x.duration)+'</span><button class="btn-del" onclick="deleteSession('+ri+')">✕</button></div></div>';
+  el.innerHTML=recent.map(function(x,i){var ri=store.sessions.length-1-i;
+    return '<div class="session-item"><span class="session-date">'+fmtDateShort(x.date)+'</span><div class="session-right"><span class="session-dur">'+fmtDur(x.duration)+'</span><button class="btn-del" onclick="deleteSession('+ri+')">✕</button></div></div>';
   }).join('');
 }
+
+// ── Render stats ──
 function renderStatsTab(){
-  var today=new Date(), t=todayStr(), dow=today.getDay(), diff=dow===0?-6:1-dow;
-  var weekDays=[], dn=['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+  var today=new Date(),t=todayStr(),dow=today.getDay(),diff=dow===0?-6:1-dow;
+  var weekDays=[],dn=['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
   for(var i=0;i<7;i++){var d2=new Date(today.getFullYear(),today.getMonth(),today.getDate()+diff+i);weekDays.push(d2.toISOString().slice(0,10))}
   document.getElementById('weekGrid').innerHTML=weekDays.map(function(d,i){
-    var secs=store.sessions.filter(function(x){return x.date===d}).reduce(function(a,b){return a+b.duration},0);
+    var secs=secsForDay(d);
     return '<div class="wday'+(d===t?' today':'')+'"><div class="wday-name">'+dn[i]+'</div><div class="wday-val">'+(secs?fmtDur(secs):'-')+'</div></div>';
   }).join('');
-  var el=document.getElementById('allList');
-  var all=store.sessions.slice().reverse();
+  var el=document.getElementById('allList'),all=store.sessions.slice().reverse();
   if(!all.length){el.innerHTML='<div class="empty">Henüz seans yok</div>';return}
-  el.innerHTML=all.map(function(x,i){
-    var ri=store.sessions.length-1-i;
-    return '<div class="session-item"><span class="session-date">'+fmtDate(x.date)+'</span><div class="session-right"><span class="session-dur">'+fmtDur(x.duration)+'</span><button class="btn-del" onclick="deleteSession('+ri+')">✕</button></div></div>';
+  el.innerHTML=all.map(function(x,i){var ri=store.sessions.length-1-i;
+    return '<div class="session-item"><span class="session-date">'+fmtDateShort(x.date)+'</span><div class="session-right"><span class="session-dur">'+fmtDur(x.duration)+'</span><button class="btn-del" onclick="deleteSession('+ri+')">✕</button></div></div>';
   }).join('');
 }
+
+// ── Render tasks (genel) ──
 function renderTasksTab(){
-  var tasks=(store.tasks[currentPeriod]||[]), el=document.getElementById('taskList');
+  var tasks=(store.tasks[currentPeriod]||[]),el=document.getElementById('taskList');
   if(!tasks.length){el.innerHTML='<div class="empty">Henüz görev yok</div>';return}
   el.innerHTML=tasks.map(function(t,i){
     return '<div class="task-item"><input type="checkbox" class="task-cb"'+(t.done?' checked':'')+' onchange="toggleTask('+i+')" /><span class="task-text'+(t.done?' done':'')+'">'+esc(t.text)+'</span><button class="btn-del" onclick="deleteTask('+i+')">✕</button></div>';
   }).join('');
 }
-function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-function renderAll(){renderTimerTab();renderStatsTab();renderTasksTab()}
 
-// ── Task/session actions ──
+// ── Calendar ──
+function renderCalendar(){
+  var t=todayStr();
+  var monthNames=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  document.getElementById('calMonthLabel').textContent=monthNames[calMonth]+' '+calYear;
+  var grid=document.getElementById('calGrid');
+  var dn=['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+  var html=dn.map(function(n){return '<div class="cal-day-name">'+n+'</div>';}).join('');
+
+  var firstDay=new Date(calYear,calMonth,1);
+  var startDow=(firstDay.getDay()+6)%7;
+  for(var i=0;i<startDow;i++) html+='<div class="cal-day empty"></div>';
+
+  var daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  for(var day=1;day<=daysInMonth;day++){
+    var mm=String(calMonth+1).padStart(2,'0'),dd=String(day).padStart(2,'0');
+    var ds=calYear+'-'+mm+'-'+dd;
+    var secs=secsForDay(ds);
+    var wk=weekOf(ds);
+    var wkGoalS=weekGoalSecs(wk);
+    var wkSecs=secsForWeek(wk);
+    var isPast=ds<t, isToday=ds===t;
+
+    var cls='cal-day';
+    if(isToday) cls+=' today';
+    if(ds===selectedDay) cls+=' selected';
+    if(wkGoalS>0&&(isPast||isToday)){
+      if(wkSecs>=wkGoalS) cls+=' goal-met';
+      else if(isPast) cls+=' goal-missed';
+    }
+
+    var allDots=(store.dayTasks[ds]||[]).concat(store.weekTasks[wk]||[]).slice(0,6);
+    var dots=allDots.map(function(tk){return '<div class="cal-dot'+(tk.done?' done':'')+'"></div>';}).join('');
+
+    html+='<div class="'+cls+'" onclick="selectDay(\''+ds+'\')">'
+      +'<div class="cal-day-num">'+day+'</div>'
+      +(secs?'<div class="cal-day-dur">'+fmtDur(secs)+'</div>':'')
+      +(allDots.length?'<div class="cal-day-dots">'+dots+'</div>':'')
+      +'</div>';
+  }
+  grid.innerHTML=html;
+  if(selectedDay) renderDayPanel(selectedDay);
+}
+
+function selectDay(ds){selectedDay=ds;renderCalendar();}
+function closePanel(){selectedDay=null;document.getElementById('dayPanel').classList.remove('visible');renderCalendar();}
+
+function renderDayPanel(ds){
+  var panel=document.getElementById('dayPanel');
+  panel.classList.add('visible');
+  document.getElementById('dayPanelTitle').textContent=fmtDateLong(ds);
+
+  var secs=secsForDay(ds);
+  var statEl=document.getElementById('dayPanelStat');
+  statEl.innerHTML=secs?'<span>'+fmtDur(secs)+'</span> çalışıldı':'Çalışma kaydı yok';
+
+  // day goal
+  var dayGoalH=store.dayGoals[ds]||0;
+  document.getElementById('dayGoalInput').value=dayGoalH||'';
+
+  // week goal (calculated)
+  var wk=weekOf(ds);
+  var wkGoalH=weekGoalHours(wk);
+  var wkSecs=secsForWeek(wk);
+  document.getElementById('weekGoalReadonly').textContent=wkGoalH>0?wkGoalH.toFixed(1):'—';
+  var pct=wkGoalH>0?Math.min(100,Math.round(wkSecs/(wkGoalH*3600)*100)):0;
+  document.getElementById('weekGoalFill').style.width=pct+'%';
+
+  // day tasks
+  renderPanelTaskList('panelDayTaskList', store.dayTasks[ds]||[], 'day', ds);
+  // week tasks
+  renderPanelTaskList('panelWeekTaskList', store.weekTasks[wk]||[], 'week', wk);
+
+  document.getElementById('panelDayTaskInput').value='';
+  document.getElementById('panelWeekTaskInput').value='';
+}
+
+function renderPanelTaskList(elId, tasks, type, key){
+  var el=document.getElementById(elId);
+  if(!tasks.length){el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:2px 0">Henüz görev yok</div>';return;}
+  el.innerHTML=tasks.map(function(t,i){
+    return '<div class="panel-task-item">'
+      +'<input type="checkbox" class="panel-task-cb"'+(t.done?' checked':'')+' onchange="togglePanelTask(\''+type+'\',\''+key+'\','+i+')" />'
+      +'<span class="panel-task-text'+(t.done?' done':'')+'">'+esc(t.text)+'</span>'
+      +'<button class="btn-del" onclick="deletePanelTask(\''+type+'\',\''+key+'\','+i+')">✕</button>'
+      +'</div>';
+  }).join('');
+}
+
+async function saveDayGoal(){
+  if(!selectedDay)return;
+  var val=parseFloat(document.getElementById('dayGoalInput').value)||0;
+  store.dayGoals[selectedDay]=val;
+  await syncToCloud(); renderCalendar();
+}
+
+async function addDayTask(){
+  if(!selectedDay)return;
+  var inp=document.getElementById('panelDayTaskInput'),text=inp.value.trim();if(!text)return;
+  if(!store.dayTasks[selectedDay])store.dayTasks[selectedDay]=[];
+  store.dayTasks[selectedDay].push({text:text,done:false});
+  inp.value=''; await syncToCloud(); renderCalendar();
+}
+async function addWeekTask(){
+  if(!selectedDay)return;
+  var inp=document.getElementById('panelWeekTaskInput'),text=inp.value.trim();if(!text)return;
+  var wk=weekOf(selectedDay);
+  if(!store.weekTasks[wk])store.weekTasks[wk]=[];
+  store.weekTasks[wk].push({text:text,done:false});
+  inp.value=''; await syncToCloud(); renderCalendar();
+}
+
+async function togglePanelTask(type,key,i){
+  if(type==='day'){if(!store.dayTasks[key])return;store.dayTasks[key][i].done=!store.dayTasks[key][i].done;}
+  else{if(!store.weekTasks[key])return;store.weekTasks[key][i].done=!store.weekTasks[key][i].done;}
+  await syncToCloud(); renderCalendar();
+}
+async function deletePanelTask(type,key,i){
+  if(type==='day'){store.dayTasks[key].splice(i,1);}
+  else{store.weekTasks[key].splice(i,1);}
+  await syncToCloud(); renderCalendar();
+}
+
+function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+
+// ── Genel görev aksiyonları ──
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 async function addTask(){
-  var inp=document.getElementById('taskInput'), text=inp.value.trim(); if(!text)return;
+  var inp=document.getElementById('taskInput'),text=inp.value.trim();if(!text)return;
   if(!store.tasks[currentPeriod])store.tasks[currentPeriod]=[];
   store.tasks[currentPeriod].push({text:text,done:false});
   inp.value=''; renderTasksTab(); await syncToCloud();
 }
-async function toggleTask(i){
-  store.tasks[currentPeriod][i].done=!store.tasks[currentPeriod][i].done;
-  renderTasksTab(); await syncToCloud();
-}
-async function deleteTask(i){
-  store.tasks[currentPeriod].splice(i,1); renderTasksTab(); await syncToCloud();
-}
-async function deleteSession(idx){
-  store.sessions.splice(idx,1); renderAll(); await syncToCloud();
-}
+async function toggleTask(i){store.tasks[currentPeriod][i].done=!store.tasks[currentPeriod][i].done;renderTasksTab();await syncToCloud();}
+async function deleteTask(i){store.tasks[currentPeriod].splice(i,1);renderTasksTab();await syncToCloud();}
+async function deleteSession(idx){store.sessions.splice(idx,1);renderAll();await syncToCloud();}
 
-// ── Tab/period switching ──
 function switchTab(name,btn){
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
   btn.classList.add('active');
@@ -363,10 +633,11 @@ function switchPeriod(p,btn){
   btn.classList.add('active'); renderTasksTab();
 }
 
-// ── Init ──
-(async function(){
-  await loadStore();
+function renderAll(){renderTimerTab();renderStatsTab();renderTasksTab();renderCalendar();}
 
+(async function(){
+  var now=new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
+  await loadStore();
   if(store.runningStart){
     running=true; startMs=store.runningStart;
     document.getElementById('btnStart').disabled=true;
@@ -377,20 +648,13 @@ function switchPeriod(p,btn){
   }
   renderAll();
   document.getElementById('loadingOverlay').classList.add('hidden');
-
-  // Background sync every 30s (for viewers)
   setInterval(async function(){
     var remote=await fsGet();
-    if(remote&&!running){
-      store=remote;
-      if(!store.tasks)store.tasks={daily:[],weekly:[]};
-      if(!store.tasks.daily)store.tasks.daily=[];
-      if(!store.tasks.weekly)store.tasks.weekly=[];
-      renderAll();
-    }
-  }, 30000);
-
-  document.getElementById('taskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addTask()});
+    if(remote&&!running){store=remote;normalizeStore();renderAll();}
+  },30000);
+  document.getElementById('taskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addTask();});
+  document.getElementById('panelDayTaskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addDayTask();});
+  document.getElementById('panelWeekTaskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addWeekTask();});
 })();
 </script>
 </body>
