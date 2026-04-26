@@ -23,7 +23,7 @@
   --r:12px;--r-sm:8px;
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;overscroll-behavior:none}
-.app{display:flex;flex-direction:column;min-height:100dvh;max-width:480px;margin:0 auto}
+.app{display:flex;flex-direction:column;min-height:100dvh;max-width:480px;margin:0 auto;position:relative;z-index:1}
 .header{padding:1.25rem 1.25rem 0;display:flex;align-items:center;justify-content:space-between}
 .header-title{font-size:13px;font-weight:500;color:var(--text2);letter-spacing:.5px;text-transform:uppercase}
 .header-right{display:flex;align-items:center;gap:10px}
@@ -79,13 +79,35 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .btn-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:2px 4px;line-height:1}
 .btn-del:active{color:var(--red)}
 .empty{font-size:13px;color:var(--text3);text-align:center;padding:2rem 0}
-.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:1.25rem}
-.wday{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 3px;text-align:center}
-.wday.today{background:var(--green-dim);border-color:var(--green)}
-.wday-name{font-size:9px;color:var(--text3);margin-bottom:4px;text-transform:uppercase}
-.wday.today .wday-name{color:var(--green)}
-.wday-val{font-family:var(--mono);font-size:11px;color:var(--text2)}
-.wday.today .wday-val{color:var(--green)}
+.week-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.week-nav-label{font-size:12px;color:var(--text2);font-weight:500}
+.week-nav-btn{background:none;border:1px solid var(--border2);color:var(--text2);width:28px;height:28px;border-radius:var(--r-sm);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;font-family:var(--sans)}
+.week-nav-btn:active{background:var(--bg3)}
+.week-nav-btn:disabled{opacity:.3;cursor:default}
+.week-summary{display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm)}
+.week-summary-worked{font-family:var(--mono);font-size:13px;color:var(--text);flex:1}
+.week-summary-goal{font-size:11px;color:var(--text3)}
+.week-summary-pct{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:99px;background:var(--bg3)}
+.week-summary-pct.met{background:var(--green-dim);color:var(--green)}
+.week-summary-pct.missed{background:var(--red-dim);color:var(--red)}
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:1.25rem}
+.wday{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 3px;text-align:center;min-height:76px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.wday.today .wday-num-wrap{text-decoration:underline;text-underline-offset:2px}
+.wday.goal-met{background:var(--green-dim);border-color:var(--green)}
+.wday.goal-missed{background:var(--red-dim);border-color:var(--red)}
+.wday-name{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px}
+.wday.goal-met .wday-name{color:var(--green)}
+.wday.goal-missed .wday-name{color:var(--red)}
+.wday-num{font-size:11px;color:var(--text2);margin-bottom:1px;font-weight:500}
+.wday.today .wday-num{color:var(--text);font-weight:600}
+.wday.goal-met .wday-num{color:var(--green)}
+.wday.goal-missed .wday-num{color:var(--red)}
+.wday-worked{font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.4}
+.wday.goal-met .wday-worked{color:var(--green)}
+.wday.goal-missed .wday-worked{color:var(--red)}
+.wday-goal{font-size:10px;color:var(--text3);line-height:1.3}
+.wday.goal-met .wday-goal{color:var(--green);opacity:.7}
+.wday.goal-missed .wday-goal{color:var(--red);opacity:.7}
 .period-tabs{display:flex;gap:6px;margin-bottom:1rem}
 .ptab{padding:6px 16px;font-size:12px;font-weight:500;border:1px solid var(--border2);border-radius:99px;background:none;color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .2s}
 .ptab.active{background:var(--text);color:var(--bg);border-color:transparent}
@@ -146,7 +168,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .goal-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .goal-row:last-child{margin-bottom:0}
 .goal-row-label{font-size:12px;color:var(--text2);flex:1}
-.goal-input{width:52px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-sm);padding:4px 8px;color:var(--text);font-size:13px;font-family:var(--mono);text-align:center;outline:none}
+.goal-input{width:44px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-sm);padding:4px 6px;color:var(--text);font-size:13px;font-family:var(--mono);text-align:center;outline:none}
 .goal-input:focus{border-color:var(--green)}
 .goal-unit{font-size:12px;color:var(--text3);min-width:28px}
 .goal-row-readonly{font-family:var(--mono);font-size:13px;color:var(--text2);min-width:52px;text-align:right}
@@ -169,6 +191,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 </style>
 </head>
 <body>
+<canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none"></canvas>
 <div class="loading-overlay" id="loadingOverlay">
   <div class="loading-spinner"></div>
   <div class="loading-text">Veriler yükleniyor...</div>
@@ -212,7 +235,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 
     <!-- STATS -->
     <div id="tab-stats" class="section">
-      <div class="sec-label" style="margin-bottom:10px">Bu haftanın dağılımı</div>
+      <div class="week-nav">
+        <button class="week-nav-btn" id="weekPrevBtn" onclick="statsWeekPrev()">&#8249;</button>
+        <span class="week-nav-label" id="statsWeekLabel"></span>
+        <button class="week-nav-btn" id="weekNextBtn" onclick="statsWeekNext()">&#8250;</button>
+      </div>
+      <div class="week-summary" id="weekSummary"></div>
       <div class="week-grid" id="weekGrid"></div>
       <div class="sec-label">Tüm seanslar</div>
       <div class="session-list" id="allList"></div>
@@ -253,8 +281,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
           <div class="goals-block-title">Hedefler</div>
           <div class="goal-row">
             <span class="goal-row-label">Günlük hedef</span>
-            <input type="number" class="goal-input" id="dayGoalInput" min="0" max="24" placeholder="0" onchange="saveDayGoal()"/>
-            <span class="goal-unit">saat</span>
+            <input type="number" class="goal-input" id="dayGoalHInput" min="0" max="23" placeholder="0" onchange="saveDayGoal()"/>
+            <span class="goal-unit">s</span>
+            <input type="number" class="goal-input" id="dayGoalMInput" min="0" max="59" placeholder="0" onchange="saveDayGoal()"/>
+            <span class="goal-unit">dk</span>
           </div>
           <div class="goal-row">
             <span class="goal-row-label">Haftalık hedef</span>
@@ -360,8 +390,9 @@ async function loadStore(){
 async function syncToCloud(){setSyncState('syncing');lcSave();await fsPatch(store);setSyncState('ok');}
 
 // ── Date helpers ──
-function todayStr(){return new Date().toISOString().slice(0,10)}
-function weekOf(d){var dt=new Date(d+'T00:00:00'),day=dt.getDay(),diff=day===0?-6:1-day;dt.setDate(dt.getDate()+diff);return dt.toISOString().slice(0,10)}
+function localStr(d){var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+day}
+function todayStr(){return localStr(new Date())}
+function weekOf(d){var dt=new Date(d+'T00:00:00'),day=dt.getDay(),diff=day===0?-6:1-day;dt.setDate(dt.getDate()+diff);return localStr(dt)}
 function monthOf(d){return d.slice(0,7)}
 function fmtDur(s){s=Math.round(s);var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;if(h>0)return h+'s '+m+'d';if(m>0)return m+'d '+sec+'sn';return sec+'sn'}
 function fmtHMS(s){s=Math.round(s);var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return pad(h)+':'+pad(m)+':'+pad(sec)}
@@ -376,7 +407,7 @@ function weekGoalSecs(wk){
   var total=0;
   for(var i=0;i<7;i++){
     var d=new Date(wk+'T00:00:00');d.setDate(d.getDate()+i);
-    var ds=d.toISOString().slice(0,10);
+    var ds=d;
     total+=(store.dayGoals[ds]||0)*3600;
   }
   return total;
@@ -393,7 +424,11 @@ async function startTimer(){
   document.getElementById('headerDot').classList.add('running');
   timerInterval=setInterval(tick,1000); await syncToCloud();
 }
-function tick(){document.getElementById('timerDisplay').textContent=fmtHMS(currentElapsed())}
+function tick(){
+  var el=currentElapsed();
+  document.getElementById('timerDisplay').textContent=fmtHMS(el);
+  window.laserPurple=(el>=3000);
+}
 async function stopTimer(){
   if(!running)return; clearInterval(timerInterval);
   var dur=currentElapsed(); running=false; store.runningStart=null;
@@ -404,6 +439,7 @@ async function stopTimer(){
   document.getElementById('timerDisplay').textContent='00:00:00';
   document.getElementById('timerDisplay').classList.remove('running');
   document.getElementById('headerDot').classList.remove('running');
+  window.laserPurple=false;
   await syncToCloud(); renderAll();
 }
 function calcStats(){
@@ -430,8 +466,9 @@ function renderTimerTab(){
   var allTasks=dayTasks.concat(weekTasks);
 
   var goalHtml='';
+  var dayGoalS=(store.dayGoals[t]||0)*3600;
   if(dayGoalH>0){
-    goalHtml='<div class="today-info-val goal">'+dayGoalH+' saat hedef</div>';
+    goalHtml='<div class="today-info-val goal">'+fmtDur(dayGoalS)+' hedef</div>';
   } else {
     goalHtml='<div class="today-info-val">Çalışma hedefi yok</div>';
   }
@@ -457,19 +494,63 @@ function renderTimerTab(){
   }).join('');
 }
 
+// ── Stats week offset ──
+var statsWeekOffset=0;
+function statsWeekPrev(){statsWeekOffset--;renderStatsTab();}
+function statsWeekNext(){if(statsWeekOffset<0){statsWeekOffset++;renderStatsTab();}}
+
 // ── Render stats ──
 function renderStatsTab(){
-  var today=new Date(),t=todayStr(),dow=today.getDay(),diff=dow===0?-6:1-dow;
-  var weekDays=[],dn=['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
-  for(var i=0;i<7;i++){var d2=new Date(today.getFullYear(),today.getMonth(),today.getDate()+diff+i);weekDays.push(d2.toISOString().slice(0,10))}
+  var t=todayStr();
+  var dn=['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+  var today=new Date();
+  var dow=today.getDay(), diffToMon=dow===0?-6:1-dow;
+  var mon=new Date(today.getFullYear(),today.getMonth(),today.getDate()+diffToMon+statsWeekOffset*7);
+  var wk=localStr(mon);
+  var weekDays=[];
+  for(var i=0;i<7;i++){
+    var d2=new Date(mon.getFullYear(),mon.getMonth(),mon.getDate()+i);
+    weekDays.push(localStr(d2));
+  }
+  var sun=new Date(mon.getFullYear(),mon.getMonth(),mon.getDate()+6);
+  var labelStart=mon.toLocaleDateString('tr-TR',{day:'numeric',month:'short'});
+  var labelEnd=sun.toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('statsWeekLabel').textContent=labelStart+' – '+labelEnd;
+  document.getElementById('weekNextBtn').disabled=(statsWeekOffset>=0);
+
+  var wkWorkedS=secsForWeek(wk);
+  var wkGoalS=weekGoalSecs(wk);
+  var pct=wkGoalS>0?Math.min(100,Math.round(wkWorkedS/wkGoalS*100)):null;
+  var pctHtml=pct!==null?('<span class="week-summary-pct'+(wkWorkedS>=wkGoalS?' met':' missed')+'">%'+pct+'</span>'):'';
+  document.getElementById('weekSummary').innerHTML=
+    '<span class="week-summary-worked">'+fmtDur(wkWorkedS)+' çalışıldı</span>'
+    +(wkGoalS>0?'<span class="week-summary-goal">/ '+fmtDur(wkGoalS)+' hedef</span>':'')
+    +pctHtml;
+
   document.getElementById('weekGrid').innerHTML=weekDays.map(function(d,i){
     var secs=secsForDay(d);
-    return '<div class="wday'+(d===t?' today':'')+'"><div class="wday-name">'+dn[i]+'</div><div class="wday-val">'+(secs?fmtDur(secs):'-')+'</div></div>';
+    var goalH=store.dayGoals[d]||0;
+    var goalS=goalH*3600;
+    var isPast=d<t, isToday=d===t;
+    var cls='wday';
+    if(isToday) cls+=' today';
+    if(goalS>0&&(isPast||isToday)){
+      if(secs>=goalS) cls+=' goal-met';
+      else cls+=' goal-missed';
+    }
+    var dayNum=parseInt(d.slice(8));
+    return '<div class="'+cls+'">'
+      +'<div class="wday-name">'+dn[i]+'</div>'
+      +'<div class="wday-num">'+dayNum+'</div>'
+      +'<div class="wday-worked">'+(secs?fmtDur(secs):'-')+'</div>'
+      +(goalS>0?'<div class="wday-goal">/ '+fmtDur(goalS)+'</div>':'')
+      +'</div>';
   }).join('');
+
   var el=document.getElementById('allList'),all=store.sessions.slice().reverse();
   if(!all.length){el.innerHTML='<div class="empty">Henüz seans yok</div>';return}
   el.innerHTML=all.map(function(x,i){var ri=store.sessions.length-1-i;
-    return '<div class="session-item"><span class="session-date">'+fmtDateShort(x.date)+'</span><div class="session-right"><span class="session-dur">'+fmtDur(x.duration)+'</span><button class="btn-del" onclick="deleteSession('+ri+')">✕</button></div></div>';
+    return '<div class="session-item"><span class="session-date">'+fmtDateShort(x.date)+'</span><div class="session-right"><span class="session-dur">'+fmtDur(x.duration)+'</span><button class="btn-del" onclick="deleteSession('+ri+')">&#10005;</button></div></div>';
   }).join('');
 }
 
@@ -539,14 +620,18 @@ function renderDayPanel(ds){
   statEl.innerHTML=secs?'<span>'+fmtDur(secs)+'</span> çalışıldı':'Çalışma kaydı yok';
 
   // day goal
-  var dayGoalH=store.dayGoals[ds]||0;
-  document.getElementById('dayGoalInput').value=dayGoalH||'';
+  var dayGoalTotal=store.dayGoals[ds]||0;
+  var dayGoalH=Math.floor(dayGoalTotal);
+  var dayGoalM=Math.round((dayGoalTotal-dayGoalH)*60);
+  document.getElementById('dayGoalHInput').value=dayGoalH||'';
+  document.getElementById('dayGoalMInput').value=dayGoalM||'';
 
   // week goal (calculated)
   var wk=weekOf(ds);
   var wkGoalH=weekGoalHours(wk);
   var wkSecs=secsForWeek(wk);
-  document.getElementById('weekGoalReadonly').textContent=wkGoalH>0?wkGoalH.toFixed(1):'—';
+  var wkGH=Math.floor(wkGoalH), wkGM=Math.round((wkGoalH-wkGH)*60);
+  document.getElementById('weekGoalReadonly').textContent=wkGoalH>0?(wkGH+(wkGM>0?'s '+wkGM+'dk':'s')):'—';
   var pct=wkGoalH>0?Math.min(100,Math.round(wkSecs/(wkGoalH*3600)*100)):0;
   document.getElementById('weekGoalFill').style.width=pct+'%';
 
@@ -573,8 +658,9 @@ function renderPanelTaskList(elId, tasks, type, key){
 
 async function saveDayGoal(){
   if(!selectedDay)return;
-  var val=parseFloat(document.getElementById('dayGoalInput').value)||0;
-  store.dayGoals[selectedDay]=val;
+  var h=parseFloat(document.getElementById('dayGoalHInput').value)||0;
+  var m=parseFloat(document.getElementById('dayGoalMInput').value)||0;
+  store.dayGoals[selectedDay]=h+(m/60);
   await syncToCloud(); renderCalendar();
 }
 
@@ -655,6 +741,104 @@ function renderAll(){renderTimerTab();renderStatsTab();renderTasksTab();renderCa
   document.getElementById('taskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addTask();});
   document.getElementById('panelDayTaskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addDayTask();});
   document.getElementById('panelWeekTaskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addWeekTask();});
+})();
+</script>
+<script>
+(function(){
+  var canvas=document.getElementById('bgCanvas');
+  var ctx=canvas.getContext('2d');
+  var angle=Math.PI/5;
+  var dx=Math.sin(angle);
+  var dy=Math.cos(angle);
+  var PAD=120;
+  var drops=[];
+  var hearts=[];
+
+  function rand(a,b){return a+Math.random()*(b-a)}
+
+  function checkSpecialDay(){
+    var now=new Date();
+    var m=now.getMonth()+1, d=now.getDate();
+    return (m===10&&d===31)||(m===11&&d===30);
+  }
+  var HEART_MODE=checkSpecialDay();
+
+  function resize(){
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize',resize);
+
+  function spawnDrop(initial){
+    var x,y;
+    if(initial){x=rand(-PAD,canvas.width+PAD);y=rand(-PAD,canvas.height+PAD);}
+    else{
+      var perim=(canvas.width+PAD*2)+(canvas.height+PAD*2);
+      var r=Math.random()*perim;
+      if(r<canvas.width+PAD*2){x=rand(-PAD,canvas.width+PAD);y=rand(-PAD,-10);}
+      else{x=rand(-PAD,-10);y=rand(-PAD,canvas.height+PAD);}
+    }
+    return{x:x,y:y,len:rand(16,46),speed:rand(0.55,1.35),opacity:rand(0.3,0.85),width:rand(0.7,1.7)};
+  }
+
+  function spawnHeart(initial){
+    var x,y;
+    if(initial){x=rand(0,canvas.width);y=rand(-canvas.height,canvas.height);}
+    else{x=rand(-40,canvas.width+40);y=rand(-60,-10);}
+    return{
+      x:x, y:y,
+      size:rand(10,20),
+      speed:rand(0.5,1.2),
+      opacity:rand(0.4,0.9),
+      drift:rand(-0.15,0.15)
+    };
+  }
+
+  for(var i=0;i<42;i++) drops.push(spawnDrop(true));
+  if(HEART_MODE) for(var i=0;i<36;i++) hearts.push(spawnHeart(true));
+
+  function draw(){
+    ctx.fillStyle='rgba(15,15,15,0.88)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    if(HEART_MODE){
+      for(var i=0;i<hearts.length;i++){
+        var h=hearts[i];
+        ctx.save();
+        ctx.globalAlpha=h.opacity;
+        ctx.font=h.size+'px serif';
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.fillText('💜',h.x,h.y);
+        ctx.restore();
+        h.y+=h.speed;
+        h.x+=h.drift;
+        if(h.y>canvas.height+40) hearts[i]=spawnHeart(false);
+      }
+    } else {
+      for(var i=0;i<drops.length;i++){
+        var d=drops[i];
+        var grad=ctx.createLinearGradient(d.x-dx*d.len,d.y-dy*d.len,d.x,d.y);
+        var purple=window.laserPurple;
+        grad.addColorStop(0,purple?'rgba(120,20,200,0)':'rgba(200,20,20,0)');
+        grad.addColorStop(0.55,purple?'rgba(140,25,220,'+d.opacity+')':'rgba(220,25,25,'+d.opacity+')');
+        grad.addColorStop(1,purple?'rgba(180,55,255,'+Math.min(1,d.opacity*1.2)+')':'rgba(255,55,55,'+Math.min(1,d.opacity*1.2)+')');
+        ctx.beginPath();
+        ctx.moveTo(d.x,d.y);
+        ctx.lineTo(d.x-dx*d.len,d.y-dy*d.len);
+        ctx.strokeStyle=grad;
+        ctx.lineWidth=d.width;
+        ctx.lineCap='round';
+        ctx.stroke();
+        d.x+=dx*d.speed;
+        d.y+=dy*d.speed;
+        if(d.y>canvas.height+PAD||d.x>canvas.width+PAD) drops[i]=spawnDrop(false);
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
 })();
 </script>
 </body>
