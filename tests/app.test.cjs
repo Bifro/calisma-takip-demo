@@ -85,3 +85,17 @@ test('running timer restores its selected course and session-count choice',()=>{
   assert.equal(element('countPlanSession').checked,true);assert.equal(element('timerCourse').disabled,true);
   assert.equal(c.running,true);assert.ok(c.currentElapsed()>=5);
 });
+test('a native stop replaces the running web timer and exposes the saved session',async()=>{
+  const {c}=harness();c.initializeStudyPlan();c.store.runningStart=Date.now()-65000;c.store.runningPlan=true;c.restoreTimer();
+  const remote=JSON.parse(JSON.stringify(c.store));remote.sessions.push({date:'2026-10-29',duration:65,timerStart:remote.runningStart});remote.runningStart=null;remote.runningPlan=false;
+  const fields=Object.fromEntries(Object.entries(remote).map(([k,v])=>[k,{stringValue:JSON.stringify(v)}]));
+  c.fetch=async()=>({ok:true,json:async()=>({fields,updateTime:'native-stop'})});
+  await c.refreshCloud();assert.equal(c.running,false);assert.equal(c.store.sessions.at(-1).duration,65);
+});
+test('web save recognizes a native save before adding another copy',async()=>{
+  const {c}=harness();c.initializeStudyPlan();c.store.runningStart=Date.now()-65000;c.restoreTimer();
+  const remote=JSON.parse(JSON.stringify(c.store));remote.sessions.push({date:'2026-10-29',duration:65,timerStart:remote.runningStart});remote.runningStart=null;
+  const fields=Object.fromEntries(Object.entries(remote).map(([k,v])=>[k,{stringValue:JSON.stringify(v)}]));
+  c.fetch=async()=>({ok:true,json:async()=>({fields,updateTime:'native-save'})});
+  await c.stopTimer();assert.equal(c.running,false);assert.equal(c.store.sessions.length,3);assert.equal(c.pendingSync,false);
+});

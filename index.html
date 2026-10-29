@@ -457,8 +457,10 @@ async function refreshCloud(){
   try{
     var remote=await cloudRead();
     if(revision!==editRevision||pendingSync||syncBusy)return;
-    // Avoid replacing a timer being operated in this tab.
-    if(!running){store=remote.data;cloudVersion=remote.version;normalizeStore();restoreTimer();renderAll();lcSave();}
+    // Android may start/stop the same shared timer while this page stays open.
+    var timerChanged=store.runningStart!==remote.data.runningStart||store.runningPlan!==remote.data.runningPlan||store.runningCourse!==remote.data.runningCourse;
+    store=remote.data;cloudVersion=remote.version;normalizeStore();
+    if(timerChanged)restoreTimer();renderAll();lcSave();
     syncReadFailed=false;syncReady=true;setSyncState('ok');
   }catch(e){syncReadFailed=true;setSyncState('err');}
 }
@@ -509,8 +511,12 @@ function tick(){
   window.laserPurple=(el>=3000);
 }
 async function stopTimer(){
-  if(!running)return; clearInterval(timerInterval);
-  var endMs=Date.now(), beginMs=startMs, dur=currentElapsed(); running=false; store.runningStart=null;
+  if(!running)return;
+  var requestedStart=startMs,requestedEnd=Date.now();
+  await refreshCloud();
+  if(!running||startMs!==requestedStart)return;
+  clearInterval(timerInterval);
+  var endMs=requestedEnd, beginMs=startMs, dur=Math.max(0,Math.floor((endMs-beginMs)/1000)); running=false; store.runningStart=null;
   var sessionId='session-'+endMs+'-'+Math.random().toString(36).slice(2,8);
   // Split a session at local midnight so daily/weekly totals remain accurate.
   var cursor=beginMs, remaining=dur, part=0;
@@ -519,7 +525,7 @@ async function stopTimer(){
     var cut=Math.min(endMs,next.getTime());
     var seconds=cut===endMs?remaining:Math.min(remaining,Math.floor((cut-cursor)/1000));
     if(seconds>0)store.sessions.push({id:sessionId+'-'+part++,groupId:sessionId,
-      date:localStr(new Date(cursor)),duration:seconds,ts:cut});
+      date:localStr(new Date(cursor)),duration:seconds,ts:cut,timerStart:beginMs});
     remaining-=seconds;cursor=cut;
   }
   if(dur>0&&store.runningPlan&&store.studyPlan){
@@ -848,7 +854,7 @@ function restoreTimer(){
   document.getElementById('loadingOverlay').setAttribute('aria-hidden','true');
   setInterval(refreshCloud,30000);
   // Browser timers may pause while the phone is locked. Recompute from startMs on return.
-  function resumeView(){if(!document.hidden){if(running)tick();renderTimerTab();}}
+  function resumeView(){if(!document.hidden){if(running)tick();renderTimerTab();refreshCloud();}}
   document.addEventListener('visibilitychange',resumeView);
   window.addEventListener('pageshow',resumeView);
   document.getElementById('taskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addTask();});
