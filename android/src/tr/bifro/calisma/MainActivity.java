@@ -14,7 +14,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public final class MainActivity extends Activity {
-  static final int GREEN=Color.rgb(29,158,117),RED=Color.rgb(181,65,34),TEXT=Color.rgb(240,240,240),MUTED=Color.rgb(162,162,162);
+  static final int GREEN=Color.rgb(29,158,117),RED=Color.rgb(216,90,48),TEXT=Color.rgb(240,240,240),MUTED=Color.rgb(162,162,162);
   TextView clock,date,goal,tasks,status;Button start,stop,notifications;CheckBox count;Spinner courses;
   final ArrayList<String> courseIds=new ArrayList<>(),courseNames=new ArrayList<>();boolean rendering=false;
   final Handler handler=new Handler(Looper.getMainLooper());
@@ -62,7 +62,7 @@ public final class MainActivity extends Activity {
   void action(boolean begin){try{if(begin){saveSelection();Store.start(this,Store.selectedCourse(this),count.isChecked());}else Store.stop(this);
     render();TimerNotification.update(this);if(!Store.testMode){TimerService.ensure(this);SyncJob.scheduleRetry(this);}Sync.request(this,null);
   }catch(Exception e){Toast.makeText(this,e.getMessage(),Toast.LENGTH_LONG).show();}}
-  void renderTime(){long start=TimerModel.running(Store.data(this));clock.setText(TimerNotification.duration(start>0?Math.max(0,(System.currentTimeMillis()-start)/1000):0));clock.setTextColor(start>0?GREEN:TEXT);}
+  void renderTime(){long start=TimerModel.running(Store.data(this));clock.setText(TimerNotification.duration(start>0?Math.max(0,(System.currentTimeMillis()-start)/1000):0));clock.setTextColor(TEXT);}
   void render(){
     rendering=true;JSONObject data=Store.data(this);long running=TimerModel.running(data);String today=TimerModel.day(System.currentTimeMillis());
     date.setText(new SimpleDateFormat("d MMMM yyyy EEEE",new Locale("tr","TR")).format(new Date()));

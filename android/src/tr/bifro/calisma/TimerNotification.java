@@ -6,6 +6,11 @@ import android.content.*;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Build;
+import android.os.SystemClock;
+import android.view.View;
+import android.widget.RemoteViews;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import org.json.*;
 
 public final class TimerNotification {
@@ -29,15 +34,41 @@ public final class TimerNotification {
     String course=courseName(data,running?data.optString("runningCourse"):Store.selectedCourse(c));
     Intent activity=new Intent(c,MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
     PendingIntent open=PendingIntent.getActivity(c,0,activity,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-    PendingIntent action=PendingIntent.getBroadcast(c,running?2:1,new Intent(c,TimerReceiver.class).setAction(running?TimerReceiver.STOP:TimerReceiver.START),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
     String status=Store.status(c),text=running?course+" · Çalışma sürüyor":course+" · 00:00:00 · Başlamaya hazır";
     if(!status.equals("Senkron"))text=course+" · "+status;
     Notification n=new Notification.Builder(c,CHANNEL).setSmallIcon(R.drawable.ic_timer).setContentTitle("Çalışma Takip")
-      .setContentText(text).setStyle(new Notification.BigTextStyle().bigText(text+"\n"+(data.optBoolean("runningPlan")?"Tamamlanan seansa sayılacak":"Süre kaydı")))
+      .setContentText(text).setStyle(new Notification.DecoratedCustomViewStyle())
+      .setCustomContentView(layout(c,start,course,false))
+      .setCustomBigContentView(layout(c,start,course,true))
       .setContentIntent(open).setColor(Color.rgb(29,158,117)).setCategory(Notification.CATEGORY_STOPWATCH)
       .setVisibility(Notification.VISIBILITY_PUBLIC).setOnlyAlertOnce(true).setOngoing(true)
-      .setWhen(running?start:0).setShowWhen(running).setUsesChronometer(running)
-      .addAction(new Notification.Action.Builder(null,running?"■ Kaydet":"▶ Başlat",action).build()).build();
+      .setWhen(running?start:0).setShowWhen(false).setUsesChronometer(running).build();
     return n;
+  }
+  static PendingIntent action(Context c,boolean stop){
+    return PendingIntent.getBroadcast(c,stop?2:1,new Intent(c,TimerReceiver.class).setAction(stop?TimerReceiver.STOP:TimerReceiver.START),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+  }
+  static RemoteViews layout(Context c,long start,String course,boolean expanded){
+    boolean running=start>0;
+    RemoteViews views=new RemoteViews(c.getPackageName(),expanded?R.layout.notification_expanded:R.layout.notification_compact);
+    views.setViewVisibility(R.id.notif_clock,running?View.VISIBLE:View.GONE);
+    views.setViewVisibility(R.id.notif_idle,running?View.GONE:View.VISIBLE);
+    views.setChronometer(R.id.notif_clock,SystemClock.elapsedRealtime()-Math.max(0,System.currentTimeMillis()-start),"%s",running);
+    if(expanded){
+      views.setTextViewText(R.id.notif_date,new SimpleDateFormat("d MMMM yyyy EEEE",new Locale("tr","TR")).format(new Date()));
+      views.setBoolean(R.id.notif_start,"setEnabled",!running);views.setBoolean(R.id.notif_stop,"setEnabled",running);
+      views.setInt(R.id.notif_start,"setBackgroundResource",running?R.drawable.notif_green_dim:R.drawable.notif_green);
+      views.setInt(R.id.notif_stop,"setBackgroundResource",running?R.drawable.notif_red:R.drawable.notif_red_dim);
+      views.setTextColor(R.id.notif_start,running?Color.rgb(119,119,119):Color.WHITE);
+      views.setTextColor(R.id.notif_stop,running?Color.WHITE:Color.rgb(119,119,119));
+      views.setOnClickPendingIntent(R.id.notif_start,action(c,false));views.setOnClickPendingIntent(R.id.notif_stop,action(c,true));
+    }else{
+      views.setTextViewText(R.id.notif_course,course);
+      views.setTextViewText(R.id.notif_action,running?"■ Kaydet":"▶ Başlat");
+      views.setInt(R.id.notif_action,"setBackgroundResource",running?R.drawable.notif_red:R.drawable.notif_green);
+      views.setTextColor(R.id.notif_action,Color.WHITE);
+      views.setOnClickPendingIntent(R.id.notif_action,action(c,running));
+    }
+    return views;
   }
 }

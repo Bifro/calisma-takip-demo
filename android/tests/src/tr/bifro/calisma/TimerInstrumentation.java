@@ -6,6 +6,9 @@ import android.os.*;
 import android.graphics.Bitmap;
 import android.service.notification.StatusBarNotification;
 import android.accessibilityservice.AccessibilityService;
+import android.view.*;
+import android.widget.*;
+import android.view.accessibility.AccessibilityNodeInfo;
 import org.json.*;
 import java.io.*;
 import java.time.*;
@@ -38,6 +41,12 @@ public final class TimerInstrumentation extends Instrumentation {
   }
   @Override public void onCreate(Bundle args){super.onCreate(args);start();}
   void screenshot(String name) throws Exception {Bitmap bitmap=getUiAutomation().takeScreenshot();try(FileOutputStream out=new FileOutputStream(new File(getTargetContext().getExternalFilesDir(null),name))){bitmap.compress(Bitmap.CompressFormat.PNG,100,out);}bitmap.recycle();}
+  boolean collapseNotification(AccessibilityNodeInfo node){
+    if(node==null)return false;CharSequence description=node.getContentDescription();
+    if(description!=null&&description.toString().equals("Collapse")){return node.performAction(AccessibilityNodeInfo.ACTION_CLICK);}
+    for(int i=0;i<node.getChildCount();i++)if(collapseNotification(node.getChild(i)))return true;
+    return false;
+  }
   @Override public void onStart(){
     Bundle result=new Bundle();Context c=getTargetContext();
     try{
@@ -79,16 +88,38 @@ public final class TimerInstrumentation extends Instrumentation {
       for(int attempt=0;posted.length==0&&attempt<20;attempt++){SystemClock.sleep(100);posted=manager.getActiveNotifications();}
       check(posted.length==1,"one timer notification");Notification n=posted[0].getNotification();
       check(n.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER),"Android system chronometer enabled");
-      check(n.visibility==Notification.VISIBILITY_PUBLIC,"lock screen visibility");check(n.actions.length==1&&n.actions[0].title.toString().contains("Kaydet"),"save action on running notification");
+      check(n.visibility==Notification.VISIBILITY_PUBLIC,"lock screen visibility");
+      check(n.contentView!=null&&n.bigContentView!=null,"compact and expanded custom layouts exist");
+      final View[] compact=new View[1],expanded=new View[1];final Notification runningNotification=n;
+      runOnMainSync(()->{compact[0]=runningNotification.contentView.apply(target,new FrameLayout(target));expanded[0]=runningNotification.bigContentView.apply(target,new FrameLayout(target));});
+      check(((Button)compact[0].findViewById(R.id.notif_action)).getText().toString().contains("Kaydet"),"compact save button exists without expanding");
+      check(compact[0].findViewById(R.id.notif_action).isEnabled(),"compact save button enabled");
+      check(compact[0].findViewById(R.id.notif_clock).getVisibility()==View.VISIBLE,"compact live chronometer visible");
+      check(!expanded[0].findViewById(R.id.notif_start).isEnabled()&&expanded[0].findViewById(R.id.notif_stop).isEnabled(),"expanded buttons match running state");
       SystemClock.sleep(500);
       screenshot("apk-kronometre.png");
       getUiAutomation().performGlobalAction(AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS);SystemClock.sleep(1500);screenshot("apk-bildirim.png");
-      n.actions[0].actionIntent.send();
+      collapseNotification(getUiAutomation().getRootInActiveWindow());SystemClock.sleep(500);screenshot("apk-bildirim-kapali.png");
+      runOnMainSync(()->compact[0].findViewById(R.id.notif_action).performClick());
       for(int attempt=0;TimerModel.running(Store.data(target))>0&&attempt<50;attempt++)SystemClock.sleep(100);
       waitForIdleSync();Sync.executor.submit(()->{}).get(20,TimeUnit.SECONDS);waitForIdleSync();
       check(TimerModel.running(Store.data(target))==0,"notification action stops timer");
       check(TimerModel.running(memory.data)==0,"notification stop reaches shared database");
       check(memory.data.getJSONObject("studyPlan").getJSONArray("progress").length()==1,"notification completion reaches study plan");
+      TimerNotification.update(target);SystemClock.sleep(250);
+      StatusBarNotification[] idlePosted=manager.getActiveNotifications();
+      for(int attempt=0;idlePosted.length==0&&attempt<30;attempt++){SystemClock.sleep(100);idlePosted=manager.getActiveNotifications();}
+      check(idlePosted.length==1,"idle custom notification stays available");
+      Notification idle=idlePosted[0].getNotification();final View[] idleCompact=new View[1];
+      runOnMainSync(()->idleCompact[0]=idle.contentView.apply(target,new FrameLayout(target)));
+      check(((Button)idleCompact[0].findViewById(R.id.notif_action)).getText().toString().contains("Başlat"),"compact idle notification has start");
+      check(idleCompact[0].findViewById(R.id.notif_idle).getVisibility()==View.VISIBLE,"idle clock visible");
+      runOnMainSync(()->idleCompact[0].findViewById(R.id.notif_action).performClick());
+      for(int attempt=0;TimerModel.running(Store.data(target))==0&&attempt<50;attempt++)SystemClock.sleep(100);
+      Sync.executor.submit(()->{}).get(20,TimeUnit.SECONDS);
+      check(TimerModel.running(Store.data(target))>0,"compact notification starts without expanding");
+      for(int attempt=0;TimerModel.running(memory.data)==0&&attempt<50;attempt++)SystemClock.sleep(100);
+      check(TimerModel.running(memory.data)>0,"compact start reaches shared database");
       target.stopService(new Intent(target,TimerService.class));target.getSystemService(android.app.job.JobScheduler.class).cancelAll();
       String production="";try{JSONObject live=Sync.decode(new Sync.Firestore().read());check(live.optJSONObject("studyPlan")!=null,"production Firestore plan read");production="Production Firestore read: PASS.";}catch(IOException e){production="Production Firestore read unavailable: "+e.getClass().getSimpleName();}
       result.putString("stream","PASS: "+assertions+" assertions; model, offline queue, conflict retry, web/native deduplication, UI, system chronometer and notification action. No production Firestore writes. "+production+"\n");

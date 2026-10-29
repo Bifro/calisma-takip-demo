@@ -47,7 +47,9 @@ try{
   try{[IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive,(Join-Path $dex 'classes.dex'),'classes.dex') | Out-Null}finally{$archive.Dispose()}
   $aligned=Join-Path $buildRoot 'aligned.apk'
   Invoke-Checked (Join-Path $toolsRoot 'zipalign.exe') @('-f','-p','4',$unsigned,$aligned)
-  $apk=Join-Path $outputRoot 'calisma-takip-1.0.0.apk'
+  $appManifest=[xml](Get-Content -LiteralPath (Join-Path $projectRoot 'AndroidManifest.xml') -Raw)
+  $appVersion=$appManifest.manifest.GetAttribute('versionName','http://schemas.android.com/apk/res/android')
+  $apk=Join-Path $outputRoot ('calisma-takip-'+$appVersion+'.apk')
   Invoke-Checked (Join-Path $JavaRoot 'bin\java.exe') @('-jar',(Join-Path $toolsRoot 'lib\apksigner.jar'),'sign','--ks',$keyPath,'--ks-key-alias','calisma-takip','--ks-pass','env:CALISMA_APK_PASSWORD','--key-pass','env:CALISMA_APK_PASSWORD','--out',$apk,$aligned)
   Invoke-Checked (Join-Path $JavaRoot 'bin\java.exe') @('-jar',(Join-Path $toolsRoot 'lib\apksigner.jar'),'verify','--verbose',$apk)
   if($WithTests){& (Join-Path $projectRoot 'build-tests.ps1') -SdkRoot $SdkRoot -JavaRoot $JavaRoot -BuildRoot $buildRoot -KeyPath $keyPath}
