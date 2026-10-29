@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -190,6 +190,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .btn-add-sm{background:var(--green);color:#fff;border:none;border-radius:var(--r-sm);padding:7px 12px;font-size:12px;cursor:pointer;font-family:var(--sans);white-space:nowrap}
 </style>
 <link rel="stylesheet" href="plan.css"/>
+<link rel="stylesheet" href="mobile.css"/>
 </head>
 <body>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none"></canvas>
@@ -269,9 +270,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
     <!-- CALENDAR -->
     <div id="tab-calendar" class="section">
       <div class="cal-header">
-        <button class="cal-nav" onclick="calPrev()">‹</button>
+        <button class="cal-nav" aria-label="Önceki ay" onclick="calPrev()">‹</button>
         <span class="cal-month-label" id="calMonthLabel"></span>
-        <button class="cal-nav" onclick="calNext()">›</button>
+        <button class="cal-nav" aria-label="Sonraki ay" onclick="calNext()">›</button>
       </div>
       <div class="cal-grid" id="calGrid"></div>
 
@@ -289,9 +290,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
           <div class="goals-block-title">Hedefler</div>
           <div class="goal-row">
             <span class="goal-row-label">Günlük hedef</span>
-            <input type="number" class="goal-input" id="dayGoalHInput" min="0" max="23" placeholder="0" onchange="saveDayGoal()"/>
+            <input type="number" class="goal-input" id="dayGoalHInput" aria-label="Günlük hedef saat" inputmode="numeric" min="0" max="23" placeholder="0" onchange="saveDayGoal()"/>
             <span class="goal-unit">s</span>
-            <input type="number" class="goal-input" id="dayGoalMInput" min="0" max="59" placeholder="0" onchange="saveDayGoal()"/>
+            <input type="number" class="goal-input" id="dayGoalMInput" aria-label="Günlük hedef dakika" inputmode="numeric" min="0" max="59" placeholder="0" onchange="saveDayGoal()"/>
             <span class="goal-unit">dk</span>
           </div>
           <div class="goal-row">
@@ -692,12 +693,12 @@ function renderCalendar(){
     var dots=allDots.map(function(tk){return '<div class="cal-dot'+(tk.done?' done':'')+'"></div>';}).join('');
 
     var plannedCourse=courseForDay(ds);
-    html+='<div class="'+cls+'" onclick="selectDay(\''+ds+'\')">'
-      +'<div class="cal-day-num">'+day+'</div>'
-      +(plannedCourse?'<div class="cal-course" title="'+esc(plannedCourse.name)+'">'+esc(plannedCourse.name)+'</div>':'')
-      +(secs?'<div class="cal-day-dur">'+fmtDur(secs)+'</div>':'')
-      +(allDots.length?'<div class="cal-day-dots">'+dots+'</div>':'')
-      +'</div>';
+    html+='<button type="button" class="'+cls+'" aria-label="'+fmtDateLong(ds)+(plannedCourse?' · '+esc(plannedCourse.name):'')+'" aria-pressed="'+(ds===selectedDay)+'" onclick="selectDay(\''+ds+'\')">'
+      +'<span class="cal-day-num">'+day+'</span>'
+      +(plannedCourse?'<span class="cal-course" title="'+esc(plannedCourse.name)+'">'+esc(plannedCourse.name)+'</span>':'')
+      +(secs?'<span class="cal-day-dur">'+fmtDur(secs)+'</span>':'')
+      +(allDots.length?'<span class="cal-day-dots">'+dots+'</span>':'')
+      +'</button>';
   }
   grid.innerHTML=html;
   if(selectedDay) renderDayPanel(selectedDay);
@@ -792,7 +793,7 @@ function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalend
 function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
 
 // ── Genel görev aksiyonları ──
-function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 async function addTask(){
   var inp=document.getElementById('taskInput'),text=inp.value.trim();if(!text)return;
   if(!store.tasks[currentPeriod])store.tasks[currentPeriod]=[];
@@ -846,6 +847,10 @@ function restoreTimer(){
   document.getElementById('loadingOverlay').classList.add('hidden');
   document.getElementById('loadingOverlay').setAttribute('aria-hidden','true');
   setInterval(refreshCloud,30000);
+  // Browser timers may pause while the phone is locked. Recompute from startMs on return.
+  function resumeView(){if(!document.hidden){if(running)tick();renderTimerTab();}}
+  document.addEventListener('visibilitychange',resumeView);
+  window.addEventListener('pageshow',resumeView);
   document.getElementById('taskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addTask();});
   document.getElementById('panelDayTaskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addDayTask();});
   document.getElementById('panelWeekTaskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addWeekTask();});
@@ -853,6 +858,7 @@ function restoreTimer(){
 </script>
 <script>
 (function(){
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   var canvas=document.getElementById('bgCanvas');
   var ctx=canvas.getContext('2d');
   var angle=Math.PI/5;

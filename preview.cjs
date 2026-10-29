@@ -12,7 +12,7 @@ return new Response(JSON.stringify({fields,updateTime:'preview-'+version}),{stat
 </script>`;
 http.createServer((req,res)=>{
   const pathname=new URL(req.url,'http://localhost').pathname;
-  const files={'/':'index.html','/index.html':'index.html','/plan.js':'plan.js','/plan.css':'plan.css'};
+  const files={'/':'index.html','/index.html':'index.html','/plan.js':'plan.js','/plan.css':'plan.css','/mobile.css':'mobile.css'};
   const file=files[pathname];if(!file){res.writeHead(404);return res.end();}
   let content=fs.readFileSync(path.join(__dirname,file),'utf8');
   if(file==='index.html')content=content.replace('<head>','<head>'+fixture);

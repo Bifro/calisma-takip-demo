@@ -59,3 +59,13 @@ node preview.cjs
 ```
 
 `http://127.0.0.1:8765` sahte Firestore yanıtları kullanır. `?offline=1` bağlantı hatasını canlandırır. Önizleme üzerinde yapılan işlemler gerçek veritabanına gitmez. Firebase güvenlik kurallarını veya üretim bulut bağlantısını doğrulamaz.
+
+## Mobil kullanım
+
+Mobil stil katmanı `mobile.css` dosyasındadır. 320, 360 ve 412 piksel genişliklerde beş sekme ve seçili gün paneli tarayıcıda kontrol edildi. Yatay taşma görülmedi. Form alanları, dokunma alanları, yazı kontrastı, ekranın güvenli kenar boşlukları ve dar ekrandaki yerleşimler iyileştirildi. Takvim günleri klavyeyle de kullanılabilen düğmelerdir. Hareket azaltma tercihi etkinse arka plan animasyonu başlatılmaz.
+
+Telefon kilitliyken tarayıcı JavaScript çalışmasını durdurabilir. Kronometre geçen süreyi başlangıç zamanından hesaplar; sayfa tekrar görünür olduğunda gösterge hemen yenilenir. Bu özellik kilit ekranında kontrol sağlamaz. Gerçek Android cihaz ve ekran klavyesi testi bu tarayıcı kontrollerinden ayrıdır.
+
+Android 16 kilit ekranında akan süre ve düğmeler için önerilen yol, Android uygulamasından üretilen normal bir devam eden bildirimdir. Android `setUsesChronometer` ile süreyi kendisi günceller; bildirim eylemleri kontrol sağlar. Kullanıcının bildirim ve kilit ekranı ayarları görünürlüğü ve etkileşimi etkiler. Statik web uygulaması/PWA, Android'in bu yerel bildirim özelliklerinin tamamını sunmaz. Bu sürüm bir Android APK'sı veya kilit ekranı bileşeni içermez.
+
+Kaynaklar: [Android bildirim kronometresi ve eylemleri](https://developer.android.com/reference/android/app/Notification.Builder), [web service worker çalışma ömrü](https://chromium.googlesource.com/chromium/src/+/main/docs/security/service-worker-security-faq.md).
