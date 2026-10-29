@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -189,6 +189,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .panel-add-row input::placeholder{color:var(--text3)}
 .btn-add-sm{background:var(--green);color:#fff;border:none;border-radius:var(--r-sm);padding:7px 12px;font-size:12px;cursor:pointer;font-family:var(--sans);white-space:nowrap}
 </style>
+<link rel="stylesheet" href="plan.css"/>
 </head>
 <body>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none"></canvas>
@@ -210,9 +211,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
     <button class="tab" onclick="switchTab('stats',this)">İstatistik</button>
     <button class="tab" onclick="switchTab('tasks',this)">Görevler</button>
     <button class="tab" onclick="switchTab('calendar',this)">Takvim</button>
+    <button class="tab" onclick="switchTab('plan',this)">Planım</button>
   </div>
 
   <div class="content">
+    <p id="syncNotice" class="plan-notice" role="status" hidden></p>
     <!-- TIMER -->
     <div id="tab-timer" class="section active">
       <div class="timer-block">
@@ -222,8 +225,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
           <button class="btn-start" id="btnStart" onclick="startTimer()">▶ Başlat</button>
           <button class="btn-stop" id="btnStop" onclick="stopTimer()" disabled>■ Kaydet</button>
         </div>
+        <label class="plan-timer-label"><input type="checkbox" id="countPlanSession"/> Bu çalışmayı tamamlanan seans olarak say</label>
+        <label class="plan-timer-course">Ders<select class="plan-select" id="timerCourse"></select></label>
         <div class="today-info" id="todayInfo"></div>
       </div>
+      <div id="planToday"></div>
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-label">Bugün</div><div class="stat-value" id="s-today">—</div></div>
         <div class="stat-card"><div class="stat-label">Bu Hafta</div><div class="stat-value" id="s-week">—</div></div>
@@ -233,6 +239,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
       <div class="session-list" id="recentList"></div>
     </div>
 
+    <div id="tab-plan" class="section"><div id="planRoot"></div></div>
     <!-- STATS -->
     <div id="tab-stats" class="section">
       <div class="week-nav">
@@ -275,6 +282,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
           <button class="day-panel-close" onclick="closePanel()">✕</button>
         </div>
         <div class="day-panel-stat" id="dayPanelStat"></div>
+        <div class="plan-calendar-summary plan-muted" id="planDaySummary"></div>
 
         <!-- Hedefler -->
         <div class="goals-block">
@@ -318,6 +326,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
   </div>
 </div>
 
+<script src="plan.js"></script>
 <script>
 // store.dayTasks:   { "2025-04-21": [{text,done},...] }
 // store.weekTasks:  { "2025-04-14": [{text,done},...] }  key=monday
@@ -327,7 +336,7 @@ var store = {
   sessions:[], tasks:{daily:[],weekly:[]},
   dayTasks:{}, weekTasks:{},
   dayGoals:{},
-  runningStart:null
+  runningStart:null, runningPlan:false, runningCourse:null, studyPlan:null
 };
 var running=false, startMs=null, timerInterval=null, currentPeriod='daily';
 var calYear, calMonth, selectedDay=null;
@@ -336,58 +345,123 @@ var calYear, calMonth, selectedDay=null;
 var PROJECT_ID='calisma-takip-74fd5';
 var FS_URL='https://firestore.googleapis.com/v1/projects/'+PROJECT_ID+'/databases/(default)/documents/data/shared';
 
-async function fsGet(){
-  try{
-    var r=await fetch(FS_URL); if(!r.ok)return null;
-    var d=await r.json(); if(!d.fields)return null;
-    function gf(k){return d.fields[k]&&d.fields[k].stringValue||null}
-    return{
-      sessions:    JSON.parse(gf('sessions')    ||'[]'),
-      tasks:       JSON.parse(gf('tasks')        ||'{"daily":[],"weekly":[]}'),
-      dayTasks:    JSON.parse(gf('dayTasks')     ||'{}'),
-      weekTasks:   JSON.parse(gf('weekTasks')    ||'{}'),
-      dayGoals:    JSON.parse(gf('dayGoals')     ||'{}'),
-      runningStart:JSON.parse(gf('runningStart') ||'null')
-    };
-  }catch(e){return null;}
+// All writes are serialized and use Firestore's updateTime precondition.
+// Pending local edits are retained on failure; a competing device cannot silently overwrite them.
+var syncBusy=null, editRevision=0, pendingSync=false, cloudVersion=null, syncConflict=false;
+var syncReady=false, syncReadFailed=false;
+var STORE_FIELDS=['sessions','tasks','dayTasks','weekTasks','dayGoals','runningStart','runningPlan','runningCourse','studyPlan'];
+async function cloudRead(){
+  var r=await fetch(FS_URL,{signal:AbortSignal.timeout(10000)});
+  if(!r.ok)throw new Error('Firestore '+r.status);
+  var d=await r.json();
+  if(!d.fields||!d.updateTime)throw new Error('Geçersiz bulut kaydı');
+  var data={};
+  STORE_FIELDS.forEach(function(k){
+    var f=d.fields[k];
+    if(f&&f.stringValue!==undefined)data[k]=JSON.parse(f.stringValue);
+  });
+  return {data:data,version:d.updateTime};
 }
-async function fsPatch(data){
-  try{
-    await fetch(FS_URL,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{
-      sessions:    {stringValue:JSON.stringify(data.sessions)},
-      tasks:       {stringValue:JSON.stringify(data.tasks)},
-      dayTasks:    {stringValue:JSON.stringify(data.dayTasks||{})},
-      weekTasks:   {stringValue:JSON.stringify(data.weekTasks||{})},
-      dayGoals:    {stringValue:JSON.stringify(data.dayGoals||{})},
-      runningStart:{stringValue:JSON.stringify(data.runningStart)}
-    }})});
-  }catch(e){}
+async function fsPatch(data,version){
+  var fields={};
+  STORE_FIELDS.forEach(function(k){fields[k]={stringValue:JSON.stringify(data[k])};});
+  var query=STORE_FIELDS.map(function(k){return 'updateMask.fieldPaths='+encodeURIComponent(k)}).join('&');
+  query+='&currentDocument.updateTime='+encodeURIComponent(version);
+  var r=await fetch(FS_URL+'?'+query,{method:'PATCH',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({fields:fields}),signal:AbortSignal.timeout(10000)});
+  if(!r.ok){
+    var detail={};try{detail=await r.json();}catch(e){}
+    if(r.status===409||r.status===412||(detail.error&&['FAILED_PRECONDITION','ABORTED'].includes(detail.error.status))){syncConflict=true;}
+    throw new Error('Firestore '+r.status);
+  }
+  var result=await r.json();
+  return result.updateTime;
 }
-
-function lcSave(){try{localStorage.setItem('ct_v5',JSON.stringify(store));}catch(e){}}
+function lcSave(){
+  try{localStorage.setItem('ct_v5',JSON.stringify(store));
+    localStorage.setItem('ct_sync_v1',JSON.stringify({pending:pendingSync,version:cloudVersion}));
+  }catch(e){document.getElementById('syncText').textContent='cihazda kayıt başarısız';}
+}
 function lcLoad(){try{return JSON.parse(localStorage.getItem('ct_v5')||'null');}catch(e){return null;}}
-
 function setSyncState(st){
   var b=document.getElementById('syncBadge'),t=document.getElementById('syncText');
   b.className='sync-badge '+st;
-  t.textContent=st==='ok'?'senkron':st==='syncing'?'kaydediliyor':'çevrimdışı';
+  t.textContent=syncConflict?'kayıt çakışması':st==='ok'?'senkron':st==='syncing'?'kaydediliyor':'cihazda · bulut bekliyor';
+  var notice=document.getElementById('syncNotice');
+  if(notice){notice.hidden=st==='ok'||st==='syncing';notice.textContent=syncConflict?
+    'Başka bir cihazda değişiklik var. Bu cihazdaki kayıtlar korundu. Yedek indirip sayfayı yenileyebilir veya bulut kaydını yükleyebilirsin.':
+    'Buluta ulaşılamadı. Değişiklikler bu cihazda bekliyor; bağlantı gelince yeniden denenecek.';}
 }
 function normalizeStore(){
+  store.sessions=store.sessions||[];
   store.tasks=store.tasks||{daily:[],weekly:[]};
   store.tasks.daily=store.tasks.daily||[];
   store.tasks.weekly=store.tasks.weekly||[];
   store.dayTasks=store.dayTasks||{};
   store.weekTasks=store.weekTasks||{};
   store.dayGoals=store.dayGoals||{};
+  store.runningStart=store.runningStart||null;
+  store.runningPlan=!!store.runningPlan;
+  store.runningCourse=store.runningCourse||null;
+  store.studyPlan=store.studyPlan||null;
 }
 async function loadStore(){
-  var cached=lcLoad(); if(cached){store=cached;normalizeStore();setSyncState('ok');}
+  var cached=lcLoad();
+  if(cached){store=cached;normalizeStore();}
+  try{
+    var meta=JSON.parse(localStorage.getItem('ct_sync_v1')||'null');
+    if(meta){pendingSync=!!meta.pending;cloudVersion=meta.version||null;}
+  }catch(e){}
   setSyncState('syncing');
-  var remote=await fsGet();
-  if(remote){store=remote;normalizeStore();lcSave();setSyncState('ok');}
-  else setSyncState(cached?'ok':'err');
+  try{
+    var remote=await cloudRead();
+    if(pendingSync){
+      if(!cloudVersion||cloudVersion!==remote.version)syncConflict=true;
+    }else{store=remote.data;cloudVersion=remote.version;normalizeStore();}
+    syncReady=true;lcSave();
+    if(pendingSync&&!syncConflict)await flushSync();else setSyncState(syncConflict?'err':'ok');
+  }catch(e){syncReadFailed=true;setSyncState('err');}
 }
-async function syncToCloud(){setSyncState('syncing');lcSave();await fsPatch(store);setSyncState('ok');}
+async function flushSync(){
+  if(syncBusy)return syncBusy;
+  if(syncConflict){setSyncState('err');return;}
+  syncBusy=(async function(){
+    try{
+      setSyncState('syncing');
+      if(!syncReady||syncReadFailed){
+        var remote=await cloudRead();
+        if(!cloudVersion||remote.version!==cloudVersion){syncConflict=true;throw new Error('Çakışma');}
+        syncReady=true;syncReadFailed=false;
+      }
+      while(pendingSync){
+        var revision=editRevision,snapshot=JSON.parse(JSON.stringify(store));
+        cloudVersion=await fsPatch(snapshot,cloudVersion);
+        if(revision===editRevision)pendingSync=false;
+        lcSave();
+      }
+      setSyncState('ok');
+    }catch(e){lcSave();setSyncState('err');if(syncConflict)renderStudyPlan();}
+  })();
+  try{await syncBusy;}finally{syncBusy=null;}
+}
+async function syncToCloud(){
+  pendingSync=true;editRevision++;lcSave();
+  return flushSync();
+}
+async function refreshCloud(){
+  if(syncBusy||syncConflict)return;
+  if(pendingSync){await flushSync();return;}
+  if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;
+  var revision=editRevision;
+  try{
+    var remote=await cloudRead();
+    if(revision!==editRevision||pendingSync||syncBusy)return;
+    // Avoid replacing a timer being operated in this tab.
+    if(!running){store=remote.data;cloudVersion=remote.version;normalizeStore();restoreTimer();renderAll();lcSave();}
+    syncReadFailed=false;syncReady=true;setSyncState('ok');
+  }catch(e){syncReadFailed=true;setSyncState('err');}
+}
+window.addEventListener('online',refreshCloud);
 
 // ── Date helpers ──
 function localStr(d){var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+day}
@@ -407,7 +481,7 @@ function weekGoalSecs(wk){
   var total=0;
   for(var i=0;i<7;i++){
     var d=new Date(wk+'T00:00:00');d.setDate(d.getDate()+i);
-    var ds=d;
+    var ds=localStr(d);
     total+=(store.dayGoals[ds]||0)*3600;
   }
   return total;
@@ -418,6 +492,10 @@ function weekGoalHours(wk){return weekGoalSecs(wk)/3600;}
 function currentElapsed(){return(!running||!startMs)?0:Math.floor((Date.now()-startMs)/1000)}
 async function startTimer(){
   if(running)return; running=true; startMs=Date.now(); store.runningStart=startMs;
+  store.runningPlan=!!store.studyPlan&&document.getElementById('countPlanSession').checked;
+  store.runningCourse=document.getElementById('timerCourse').value||null;
+  document.getElementById('countPlanSession').disabled=true;
+  document.getElementById('timerCourse').disabled=true;
   document.getElementById('btnStart').disabled=true;
   document.getElementById('btnStop').disabled=false;
   document.getElementById('timerDisplay').classList.add('running');
@@ -431,8 +509,24 @@ function tick(){
 }
 async function stopTimer(){
   if(!running)return; clearInterval(timerInterval);
-  var dur=currentElapsed(); running=false; store.runningStart=null;
-  store.sessions.push({date:todayStr(),duration:dur,ts:Date.now()});
+  var endMs=Date.now(), beginMs=startMs, dur=currentElapsed(); running=false; store.runningStart=null;
+  var sessionId='session-'+endMs+'-'+Math.random().toString(36).slice(2,8);
+  // Split a session at local midnight so daily/weekly totals remain accurate.
+  var cursor=beginMs, remaining=dur, part=0;
+  while(cursor<endMs&&remaining>0){
+    var next=new Date(cursor);next.setHours(24,0,0,0);
+    var cut=Math.min(endMs,next.getTime());
+    var seconds=cut===endMs?remaining:Math.min(remaining,Math.floor((cut-cursor)/1000));
+    if(seconds>0)store.sessions.push({id:sessionId+'-'+part++,groupId:sessionId,
+      date:localStr(new Date(cursor)),duration:seconds,ts:cut});
+    remaining-=seconds;cursor=cut;
+  }
+  if(dur>0&&store.runningPlan&&store.studyPlan){
+    store.studyPlan.progress.push({id:sessionId,date:todayStr(),count:1,sessionGroup:sessionId,courseStart:store.runningCourse||store.studyPlan.courses[0].start});
+  }
+  document.getElementById('countPlanSession').checked=false;
+  document.getElementById('countPlanSession').disabled=false;store.runningPlan=false;
+  document.getElementById('timerCourse').disabled=false;store.runningCourse=null;
   startMs=null;
   document.getElementById('btnStart').disabled=false;
   document.getElementById('btnStop').disabled=true;
@@ -440,7 +534,7 @@ async function stopTimer(){
   document.getElementById('timerDisplay').classList.remove('running');
   document.getElementById('headerDot').classList.remove('running');
   window.laserPurple=false;
-  await syncToCloud(); renderAll();
+  renderAll(); await syncToCloud();
 }
 function calcStats(){
   var t=todayStr(),wk=weekOf(t),mo=monthOf(t),day=0,week=0,month=0;
@@ -597,8 +691,10 @@ function renderCalendar(){
     var allDots=(store.dayTasks[ds]||[]).concat(store.weekTasks[wk]||[]).slice(0,6);
     var dots=allDots.map(function(tk){return '<div class="cal-dot'+(tk.done?' done':'')+'"></div>';}).join('');
 
+    var plannedCourse=courseForDay(ds);
     html+='<div class="'+cls+'" onclick="selectDay(\''+ds+'\')">'
       +'<div class="cal-day-num">'+day+'</div>'
+      +(plannedCourse?'<div class="cal-course" title="'+esc(plannedCourse.name)+'">'+esc(plannedCourse.name)+'</div>':'')
       +(secs?'<div class="cal-day-dur">'+fmtDur(secs)+'</div>':'')
       +(allDots.length?'<div class="cal-day-dots">'+dots+'</div>':'')
       +'</div>';
@@ -618,6 +714,7 @@ function renderDayPanel(ds){
   var secs=secsForDay(ds);
   var statEl=document.getElementById('dayPanelStat');
   statEl.innerHTML=secs?'<span>'+fmtDur(secs)+'</span> çalışıldı':'Çalışma kaydı yok';
+  renderPlanDaySummary(ds);
 
   // day goal
   var dayGoalTotal=store.dayGoals[ds]||0;
@@ -658,8 +755,8 @@ function renderPanelTaskList(elId, tasks, type, key){
 
 async function saveDayGoal(){
   if(!selectedDay)return;
-  var h=parseFloat(document.getElementById('dayGoalHInput').value)||0;
-  var m=parseFloat(document.getElementById('dayGoalMInput').value)||0;
+  var h=Math.max(0,Math.min(23,parseInt(document.getElementById('dayGoalHInput').value,10)||0));
+  var m=Math.max(0,Math.min(59,parseInt(document.getElementById('dayGoalMInput').value,10)||0));
   store.dayGoals[selectedDay]=h+(m/60);
   await syncToCloud(); renderCalendar();
 }
@@ -704,7 +801,14 @@ async function addTask(){
 }
 async function toggleTask(i){store.tasks[currentPeriod][i].done=!store.tasks[currentPeriod][i].done;renderTasksTab();await syncToCloud();}
 async function deleteTask(i){store.tasks[currentPeriod].splice(i,1);renderTasksTab();await syncToCloud();}
-async function deleteSession(idx){store.sessions.splice(idx,1);renderAll();await syncToCloud();}
+async function deleteSession(idx){
+  var item=store.sessions[idx];if(!item)return;
+  store.sessions.splice(idx,1);
+  if(store.studyPlan&&item.groupId&&!store.sessions.some(function(x){return x.groupId===item.groupId;})){
+    store.studyPlan.progress=store.studyPlan.progress.filter(function(x){return x.sessionGroup!==item.groupId;});
+  }
+  renderAll();await syncToCloud();
+}
 
 function switchTab(name,btn){
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
@@ -719,25 +823,29 @@ function switchPeriod(p,btn){
   btn.classList.add('active'); renderTasksTab();
 }
 
-function renderAll(){renderTimerTab();renderStatsTab();renderTasksTab();renderCalendar();}
+function renderAll(){renderTimerTab();renderStatsTab();renderTasksTab();renderCalendar();renderStudyPlan();}
 
+function restoreTimer(){
+  clearInterval(timerInterval);
+  running=!!store.runningStart;startMs=store.runningStart;
+  document.getElementById('countPlanSession').checked=running&&!!store.runningPlan;
+  document.getElementById('countPlanSession').disabled=running;
+  document.getElementById('timerCourse').disabled=running;
+  document.getElementById('btnStart').disabled=running;
+  document.getElementById('btnStop').disabled=!running;
+  document.getElementById('timerDisplay').classList.toggle('running',running);
+  document.getElementById('headerDot').classList.toggle('running',running);
+  if(running){timerInterval=setInterval(tick,1000);tick();}
+  else{document.getElementById('timerDisplay').textContent='00:00:00';window.laserPurple=false;}
+}
 (async function(){
   var now=new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
-  await loadStore();
-  if(store.runningStart){
-    running=true; startMs=store.runningStart;
-    document.getElementById('btnStart').disabled=true;
-    document.getElementById('btnStop').disabled=false;
-    document.getElementById('timerDisplay').classList.add('running');
-    document.getElementById('headerDot').classList.add('running');
-    timerInterval=setInterval(tick,1000); tick();
-  }
+  await loadStore();restoreTimer();
+  if(!syncConflict&&initializeStudyPlan()){normalizeStore();syncToCloud();}
   renderAll();
   document.getElementById('loadingOverlay').classList.add('hidden');
-  setInterval(async function(){
-    var remote=await fsGet();
-    if(remote&&!running){store=remote;normalizeStore();renderAll();}
-  },30000);
+  document.getElementById('loadingOverlay').setAttribute('aria-hidden','true');
+  setInterval(refreshCloud,30000);
   document.getElementById('taskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addTask();});
   document.getElementById('panelDayTaskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addDayTask();});
   document.getElementById('panelWeekTaskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addWeekTask();});
@@ -843,3 +951,4 @@ function renderAll(){renderTimerTab();renderStatsTab();renderTasksTab();renderCa
 </script>
 </body>
 </html>
+
