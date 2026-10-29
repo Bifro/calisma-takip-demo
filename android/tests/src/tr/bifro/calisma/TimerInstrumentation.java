@@ -96,6 +96,9 @@ public final class TimerInstrumentation extends Instrumentation {
       check(compact[0].findViewById(R.id.notif_action).isEnabled(),"compact save button enabled");
       check(compact[0].findViewById(R.id.notif_clock).getVisibility()==View.VISIBLE,"compact live chronometer visible");
       check(!expanded[0].findViewById(R.id.notif_start).isEnabled()&&expanded[0].findViewById(R.id.notif_stop).isEnabled(),"expanded buttons match running state");
+      runOnMainSync(()->{int width=(int)(240*target.getResources().getDisplayMetrics().density);expanded[0].measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec((int)(148*target.getResources().getDisplayMetrics().density),View.MeasureSpec.EXACTLY));expanded[0].layout(0,0,width,expanded[0].getMeasuredHeight());});
+      View narrowStop=expanded[0].findViewById(R.id.notif_stop);
+      check(narrowStop.getWidth()>0&&narrowStop.getRight()<=((View)narrowStop.getParent()).getWidth(),"expanded controls fit narrow notification without clipping");
       SystemClock.sleep(500);
       screenshot("apk-kronometre.png");
       getUiAutomation().performGlobalAction(AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS);SystemClock.sleep(1500);screenshot("apk-bildirim.png");
