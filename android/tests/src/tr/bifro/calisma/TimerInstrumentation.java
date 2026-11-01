@@ -106,14 +106,17 @@ public final class TimerInstrumentation extends Instrumentation {
       try(InputStream grant=new android.os.ParcelFileDescriptor.AutoCloseInputStream(getUiAutomation().executeShellCommand("pm grant tr.bifro.calisma android.permission.POST_NOTIFICATIONS"))){byte[] buffer=new byte[1024];while(grant.read(buffer)!=-1){}}
       check(target.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)==android.content.pm.PackageManager.PERMISSION_GRANTED,"notification runtime permission");
       Intent launch=new Intent(target,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
-      MainActivity activity=(MainActivity)startActivitySync(launch);SystemClock.sleep(200);
+      ActivityMonitor launchMonitor=addMonitor(MainActivity.class.getName(),null,false);
+      runOnMainSync(()->target.startActivity(launch));
+      MainActivity activity=(MainActivity)waitForMonitorWithTimeout(launchMonitor,15000);removeMonitor(launchMonitor);
+      check(activity!=null,"full app activity launched without waiting for animated page to become idle");SystemClock.sleep(200);
       waitJs(activity,"!!document.getElementById('timerDisplay')&&document.getElementById('loadingOverlay').classList.contains('hidden')");
       runOnMainSync(()->TimerNotification.update(target));
       check(js(activity,"document.getElementById('timerDisplay').textContent").toString().startsWith("00:01:"),"shared web UI shows elapsed native timer");
       check(((Number)js(activity,"document.querySelectorAll('.tabs .tab').length")).intValue()==5,"all five website tabs packaged in APK");
       check(js(activity,"document.querySelector('.header-logo').naturalWidth>0").equals(true),"bundled logo loads offline");
       NotificationManager manager=target.getSystemService(NotificationManager.class);StatusBarNotification[] posted=manager.getActiveNotifications();
-      for(int attempt=0;posted.length==0&&attempt<20;attempt++){SystemClock.sleep(100);posted=manager.getActiveNotifications();}
+      for(int attempt=0;posted.length==0&&attempt<60;attempt++){SystemClock.sleep(100);posted=manager.getActiveNotifications();}
       check(posted.length==1,"one timer notification");Notification n=posted[0].getNotification();
       check(n.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER),"Android system chronometer enabled");
       check(n.visibility==Notification.VISIBILITY_PUBLIC,"lock screen visibility");
@@ -136,7 +139,7 @@ public final class TimerInstrumentation extends Instrumentation {
       SystemClock.sleep(200);Sync.executor.submit(()->{}).get(20,TimeUnit.SECONDS);SystemClock.sleep(200);
       check(TimerModel.running(Store.data(target))==0,"notification action stops timer");
       check(TimerModel.running(memory.data)==0,"notification stop reaches shared database");
-      check(memory.data.getJSONObject("studyPlan").getJSONArray("progress").length()==1,"notification completion reaches study plan");
+      check(memory.data.getJSONObject("studyPlan").getJSONArray("progress").length()==1,"legacy in-flight notification completion preserved");
       TimerNotification.update(target);SystemClock.sleep(250);
       StatusBarNotification[] idlePosted=manager.getActiveNotifications();
       for(int attempt=0;idlePosted.length==0&&attempt<30;attempt++){SystemClock.sleep(100);idlePosted=manager.getActiveNotifications();}
@@ -157,23 +160,33 @@ public final class TimerInstrumentation extends Instrumentation {
       for(int attempt=0;TimerModel.running(Store.data(target))>0&&attempt<100;attempt++)SystemClock.sleep(100);
       Sync.executor.submit(()->{}).get(20,TimeUnit.SECONDS);
       check(TimerModel.running(Store.data(target))==0&&TimerModel.running(memory.data)==0,"web UI save stops notification and shared timer");
+      check(js(activity,"document.getElementById('countPlanSession')===null&&document.getElementById('timerCourse')===null").equals(true),"pre-study course and count controls removed");
+      check(!memory.data.optBoolean("runningPlan"),"new notification start does not auto-count completion");
       memory.offline=true;
-      js(activity,"document.querySelectorAll('.tab')[2].click();document.getElementById('taskInput').value='Offline görev testi';addTask();true");
+      js(activity,"document.querySelectorAll('.tab')[2].click();openTargetEditor(targets()[0].id);document.getElementById('targetTotal').value='25';saveWorkflow({preventDefault:function(){}});true");
       for(int attempt=0;Store.ops(target).length()==0&&attempt<100;attempt++)SystemClock.sleep(100);
       Sync.executor.submit(()->{}).get(20,TimeUnit.SECONDS);
-      check(Store.ops(target).length()>0&&Store.data(target).getJSONObject("tasks").getJSONArray("daily").length()==1,"full web task edit persists offline in native queue");
-      check(memory.data.getJSONObject("tasks").getJSONArray("daily").length()==0,"offline edit not falsely cloud saved");
+      check(Store.ops(target).length()>0&&Store.data(target).getJSONObject("studyPlan").getJSONArray("sessionTargets").getJSONObject(0).getInt("total")==25,"target edit persists offline in native queue");
+      check(memory.data.getJSONObject("studyPlan").getJSONArray("sessionTargets").getJSONObject(0).getInt("total")==20,"offline target edit not falsely cloud saved");
       memory.offline=false;memory.data.getJSONObject("dayGoals").put(TimerModel.day(System.currentTimeMillis()),5);memory.version++;
       Sync.perform(target);target.sendBroadcast(new Intent(Sync.UPDATED).setPackage(target.getPackageName()));
-      check(memory.data.getJSONObject("tasks").getJSONArray("daily").getJSONObject(0).getString("text").equals("Offline görev testi"),"offline web task reaches shared database");
+      check(memory.data.getJSONObject("studyPlan").getJSONArray("sessionTargets").getJSONObject(0).getInt("total")==25,"offline session target reaches shared database");
       check(memory.data.getJSONObject("dayGoals").getInt(TimerModel.day(System.currentTimeMillis()))==5,"web queue preserves another devices goal update");
       waitJs(activity,"!pendingSync&&!syncBusy&&store.dayGoals[todayStr()]===5");
       js(activity,"document.querySelectorAll('.tab')[4].click();true");
       check(js(activity,"document.getElementById('nativeNotifications')!==null").equals(true),"notification settings in plan tab");
-      js(activity,"document.getElementById('progressDate').value=todayStr();document.getElementById('progressCount').value='2';document.getElementById('progressCourse').value='2026-10-27';addPlanProgress({preventDefault:function(){}});true");
-      waitJs(activity,"!pendingSync&&!syncBusy");Sync.executor.submit(()->{}).get(20,TimeUnit.SECONDS);
+      js(activity,"document.querySelectorAll('.tab')[0].click();openWorkEditor();document.getElementById('workMinutes0').value='30';document.getElementById('workSeconds0').value='15';document.getElementById('workNote').value='Manual work test';saveWorkflow({preventDefault:function(){}});true");
+      waitJs(activity,"!pendingSync&&!syncBusy&&!workflowSaving");Sync.executor.submit(()->{}).get(20,TimeUnit.SECONDS);
+      check(js(activity,"secsForDay(todayStr())>=1815").equals(true),"manual duration entered inside APK");
+      js(activity,"window.testWork=workGroups().find(function(g){return g.parts[0].note==='Manual work test';}).key;openCompletion(window.testWork);document.getElementById('completionCount').value='2';saveWorkflow({preventDefault:function(){}});true");
+      waitJs(activity,"!pendingSync&&!syncBusy&&!workflowSaving");Sync.executor.submit(()->{}).get(20,TimeUnit.SECONDS);
       boolean manualProgress=false;JSONArray savedProgress=memory.data.getJSONObject("studyPlan").getJSONArray("progress");for(int i=0;i<savedProgress.length();i++)if(savedProgress.getJSONObject(i).optInt("count")==2)manualProgress=true;
-      check(manualProgress,"plan progress entered in APK reaches same web plan");
+      check(manualProgress,"post-study completion in APK reaches shared session target");
+      js(activity,"openWorkEditor(window.testWork);document.getElementById('workMinutes0').value='20';document.getElementById('workSeconds0').value='7';saveWorkflow({preventDefault:function(){}});true");
+      waitJs(activity,"!pendingSync&&!syncBusy&&!workflowSaving");Sync.executor.submit(()->{}).get(20,TimeUnit.SECONDS);
+      check(js(activity,"findWork(window.testWork).duration===1207&&linkedProgress(findWork(window.testWork))[0].count===2").equals(true),"duration edit preserves linked completion and seconds");
+      js(activity,"openCompletion(window.testWork);undoWorkCompletion();true");waitJs(activity,"!pendingSync&&!syncBusy&&!workflowSaving");Sync.executor.submit(()->{}).get(20,TimeUnit.SECONDS);
+      check(js(activity,"linkedProgress(findWork(window.testWork)).length===0&&findWork(window.testWork).duration===1207").equals(true),"undo completion preserves work duration");
       js(activity,"document.querySelectorAll('.tab')[3].click();true");
       check(js(activity,"document.getElementById('tab-calendar').classList.contains('active')").equals(true),"calendar screen inside APK");
       screenshot("apk-takvim-2.png");

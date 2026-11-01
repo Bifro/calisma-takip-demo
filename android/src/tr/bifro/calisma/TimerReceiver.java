@@ -5,7 +5,7 @@ public final class TimerReceiver extends BroadcastReceiver {
   public static final String START="tr.bifro.calisma.START",STOP="tr.bifro.calisma.STOP";
   @Override public void onReceive(Context context,Intent intent){
     try{
-      if(START.equals(intent.getAction()))Store.start(context,Store.selectedCourse(context),Store.selectedCount(context));
+      if(START.equals(intent.getAction()))Store.start(context,"",false);
       else if(STOP.equals(intent.getAction()))Store.stop(context);
       else return;
       TimerNotification.update(context);TimerService.ensure(context);PendingResult pending=goAsync();

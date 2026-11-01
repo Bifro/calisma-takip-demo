@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 public final class MainActivity extends Activity {
   static final String ORIGIN="https://appassets.androidplatform.net";
   static final String HOME=ORIGIN+"/web/index.html";
-  static final Set<String> FILES=new HashSet<>(Arrays.asList("index.html","plan.js","plan.css","mobile.css","favicon.ico","site.webmanifest","assets/logo.png","assets/icon-192.png","assets/icon-512.png","assets/apple-touch-icon.png"));
+  static final Set<String> FILES=new HashSet<>(Arrays.asList("index.html","plan.js","workflow.js","plan.css","mobile.css","favicon.ico","site.webmanifest","assets/logo.png","assets/icon-192.png","assets/icon-512.png","assets/apple-touch-icon.png"));
   WebView web; final Handler handler=new Handler(Looper.getMainLooper()); boolean receiverRegistered=false;
   volatile String exportContent;String exportName;volatile Uri savedExport;
   final Runnable poll=new Runnable(){public void run(){if(!Store.testMode)Sync.request(MainActivity.this,null);handler.postDelayed(this,15000);}};
@@ -68,7 +68,7 @@ public final class MainActivity extends Activity {
   public final class Bridge {
     @JavascriptInterface public String read(){try{return Store.webRead(MainActivity.this).toString();}catch(Exception e){return failure(e);}}
     @JavascriptInterface public String patch(String json,String version){try{String next=Store.webPatch(MainActivity.this,new JSONObject(json),version);requestSync();return new JSONObject().put("ok",true).put("version",next).toString();}catch(Exception e){return failure(e);}}
-    @JavascriptInterface public String timer(boolean begin,String course,boolean count){try{Store.selection(MainActivity.this,course,count);if(begin)Store.start(MainActivity.this,course,count);else Store.stop(MainActivity.this);requestSync();return Store.webRead(MainActivity.this).toString();}catch(Exception e){return failure(e);}}
+    @JavascriptInterface public String timer(boolean begin,String course,boolean count){try{Store.selection(MainActivity.this,"",false);if(begin)Store.start(MainActivity.this,"",false);else Store.stop(MainActivity.this);requestSync();return Store.webRead(MainActivity.this).toString();}catch(Exception e){return failure(e);}}
     @JavascriptInterface public void selection(String course,boolean count){Store.selection(MainActivity.this,course,count);TimerNotification.update(MainActivity.this);}
     @JavascriptInterface public String recover(){try{
       return Sync.executor.submit(()->{String expected=Store.version(Store.data(MainActivity.this));JSONObject latest=Sync.decode(Sync.transport.read());Store.recover(MainActivity.this,latest,expected);TimerNotification.update(MainActivity.this);return Store.webRead(MainActivity.this).toString();}).get(25,TimeUnit.SECONDS);
@@ -92,7 +92,7 @@ public final class MainActivity extends Activity {
   }
   @Override protected void onResume(){super.onResume();IntentFilter filter=new IntentFilter(Sync.UPDATED);if(Build.VERSION.SDK_INT>=33)registerReceiver(updated,filter,Context.RECEIVER_NOT_EXPORTED);else registerReceiver(updated,filter);receiverRegistered=true;web.onResume();refreshWeb();handler.post(poll);if(!Store.testMode)TimerService.ensure(this);}
   @Override protected void onPause(){handler.removeCallbacks(poll);if(receiverRegistered){unregisterReceiver(updated);receiverRegistered=false;}web.onPause();super.onPause();}
-  @Override public void onBackPressed(){web.evaluateJavascript("(function(){var panel=document.getElementById('dayPanel');if(panel&&panel.classList.contains('visible')){closePanel();return true;}var active=document.querySelector('.tab.active');if(active&&active.textContent.trim()!=='Kronometre'){document.querySelector('.tab').click();return true;}return false;})()",result->{if(!"true".equals(result))moveTaskToBack(true);});}
+  @Override public void onBackPressed(){web.evaluateJavascript("(function(){var dialog=document.getElementById('workflowDialog');if(dialog&&dialog.open){closeWorkflow();return true;}var panel=document.getElementById('dayPanel');if(panel&&panel.classList.contains('visible')){closePanel();return true;}var active=document.querySelector('.tab.active');if(active&&active.textContent.trim()!=='Kronometre'){document.querySelector('.tab').click();return true;}return false;})()",result->{if(!"true".equals(result))moveTaskToBack(true);});}
   @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results){super.onRequestPermissionsResult(request,permissions,results);TimerNotification.update(this);if(!Store.testMode)TimerService.ensure(this);refreshWeb();}
   @Override protected void onDestroy(){if(web!=null){web.removeJavascriptInterface("StudyAndroid");web.destroy();web=null;}super.onDestroy();}
 }

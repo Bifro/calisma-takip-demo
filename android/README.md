@@ -1,14 +1,14 @@
 # Çalışma Takip · Android
 
-Android 8+ için tam Çalışma Takip uygulaması. 2.0.0 sürümü, web sitesinin aynı HTML/CSS/JavaScript dosyalarını APK içine paketler: Kronometre, İstatistik, Görevler, Takvim ve Planım sekmelerinin tamamı uygulamanın içindedir. Ayrı tarayıcı açmak gerekmez. Kilit ekranındaki yerel kronometre kontrolleri korunur.
+Android 8+ için tam Çalışma Takip uygulaması. 3.0.0 sürümü, web sitesinin aynı HTML/CSS/JavaScript dosyalarını APK içine paketler: Kronometre, İstatistik, Görevler, Takvim ve Planım sekmelerinin tamamı uygulamanın içindedir. Ayrı tarayıcı açmak gerekmez. Kilit ekranındaki yerel kronometre kontrolleri korunur.
 
 ## Kurulum
 
-1. Telefonda [APK’yı indir](https://bifro.github.io/calisma-takip-demo/downloads/calisma-takip-2.0.0.apk) ve Android'in paket yükleyicisiyle mevcut kurulumun üzerine güncelle.
+1. Telefonda [APK’yı indir](https://bifro.github.io/calisma-takip-demo/downloads/calisma-takip-3.0.0.apk) ve Android'in paket yükleyicisiyle mevcut kurulumun üzerine güncelle.
 2. Gerekirse kullandığın tarayıcı/dosya uygulaması için bu APK'yı yükleme iznini Android ayarlarından ver.
 3. Uygulamayı ilk kez internet açıkken başlat. Mevcut Firebase planı ve kronometre yüklenir.
 4. **Planım → Telefon bildirimleri → Kilit ekranı bildirimini aç** düğmesine dokun ve bildirim iznini ver. Telefonun kilit ekranı ayarlarında bu uygulamanın bildirimlerinin gösterilmesine izin ver.
-5. Ders ve seans sayımı seçimini uygulamada yap. Kapalı bildirimde çalışırken **Kaydet**, boşta **Başlat** görünür; düğmeyi kullanmak için bildirimi büyütmek gerekmez. Genişletilmiş görünümde tarih, büyük sayaç ve iki düğme bulunur. Bildirimin boş alanına dokununca kart açılır.
+5. Kronometre veya bildirimden yalnızca süreyi kaydet. Uygulamadaki çalışma kartında **Seans tamamlandı** ile ders/hedef ve adet seç. Seanslar sekmesinden hedefleri düzenle. Kapalı bildirimde çalışırken **Kaydet**, boşta **Başlat** görünür; düğmeyi kullanmak için bildirimi büyütmek gerekmez. Genişletilmiş görünümde tarih, büyük sayaç ve iki düğme bulunur. Bildirimin boş alanına dokununca kart açılır.
 6. Mevcut web sayfalarını bir kez yenile; Android ile ortak kronometreyi takip eden güncel kodu yüklesinler.
 
 1.1.0 sürümünde RemoteViews ile özel bildirim içerikleri eklendi: 48 dp kapalı görünümde sayaç ve aktif işlem düğmesi, 148 dp geniş görünümde tarih/sayaç/iki düğme. İç kart web ile aynı koyu (#1a1a1a), açık sayaç (#f0f0f0), yeşil (#1D9E75) ve turuncu (#D85A30) renkleri kullanır. Android ve üretici arayüzü bildirimin dış çerçevesini ve uygulama başlığını çizmeye devam eder; tüm bildirim alanının HTML kartı gibi görünmesi garanti edilmez. Canlı sayaç Android Chronometer bileşenidir; süre biçimi Android tarafından belirlenir. Ekran kilitliyken JavaScript'e veya saniyelik ağ isteklerine ihtiyaç duymaz. Gösterilen ders ve seans sayımı, çalışmayı başlatmadan önce uygulamada seçilir.
@@ -40,7 +40,7 @@ Harici bağımlılık veya paket kurulumu yoktur. Android SDK 36.1, Build Tools 
 .\build.ps1 -SdkRoot 'C:\Users\fberk\AppData\Local\Android\Sdk' -WithTests
 ```
 
-`aapt2`, `javac`, D8, zipalign ve apksigner çalıştırılır. Türkçe klasör adlarıyla Android araçlarının uyumu için derleme ASCII isimli geçici klasörde yapılır; `-WorkRoot` ile yer seçilebilir. Son dosya `dist/calisma-takip-2.0.0.apk` olur; dosya sürümü manifestten alınır.
+`aapt2`, `javac`, D8, zipalign ve apksigner çalıştırılır. Türkçe klasör adlarıyla Android araçlarının uyumu için derleme ASCII isimli geçici klasörde yapılır; `-WorkRoot` ile yer seçilebilir. Son dosya `dist/calisma-takip-3.0.0.apk` olur; dosya sürümü manifestten alınır.
 
 Bu bir kişisel kurulum APK'sıdır; mağaza yayını yapılmamıştır. Sürüm güncellemeleri için aynı imza gerekir. Özel anahtar ve parolası `.signing/` altında yalnızca yerelde saklanır, GitHub'a yüklenmez. Bu klasör güvenli biçimde yedeklenmelidir. Test APK'sı kullanıcıya dağıtılmaz.
 
@@ -49,7 +49,7 @@ Bu bir kişisel kurulum APK'sıdır; mağaza yayını yapılmamıştır. Sürüm
 `tests/TimerInstrumentation.java`, ayrı bir Android 16 emülatöründe sahte bir bellek veritabanı ve ayrı test tercihleri kullanır. Canlı Firestore'a yalnızca okuma kontrolü yapılır; üretim belgesine test kaydı yazılmaz. Kontroller: JSON veri uyumu, gece yarısı bölünmesi, tekrar kaydetme, başka cihazdaki yeni sayaç, kalıcı çevrimdışı kuyruk, koşullu yazma çakışması, web/APK çift kayıt önleme, kartın çizimi, sistem kronometreli bildirim ve bildirimdeki Kaydet eylemi.
 
 ```text
-adb -s emulator-5580 install -r dist/calisma-takip-2.0.0.apk
+adb -s emulator-5580 install -r dist/calisma-takip-3.0.0.apk
 adb -s emulator-5580 install -r dist/timer-tests.apk
 adb -s emulator-5580 shell am instrument -w tr.bifro.calisma.tests/tr.bifro.calisma.TimerInstrumentation
 ```
@@ -59,3 +59,9 @@ Testler ayrıca kapalı bildirimdeki özel Başlat/Kaydet düğmelerini, canlı 
 2.0.0 testleri, beş sekmeli paketli WebView arayüzünü, logo yüklemesini, uygulama içinden Kaydet işlemini, çevrimdışı görev düzenleme ve yeniden bağlantıda eşitlemeyi, diğer cihazın hedef değişikliğini korumayı, plan ilerlemesi girişini ve Android dosya kaydedicisiyle JSON yedek dışa aktarmayı da kapsar. Derleme, Windows aapt2 tarafından üretilen ters eğik çizgili ZIP varlık yollarını Android için `/` biçimine çevirir.
 
 WebView yaklaşımı: [Android uygulama içi içerik](https://developer.android.com/develop/ui/views/layout/webapps/load-local-content), [yerel köprü güvenliği](https://developer.android.com/privacy-and-security/risks/insecure-webview-native-bridges).
+
+## 3.0 seans akışı
+
+Kronometrede ders seçimi ve otomatik seans sayımı kaldırıldı. Yeni bildirim başlangıçları da ders/sayım seçmez; uygulamadaki kayıt kartından sonradan hedefe işlenir. Eski sürümde başlamış bir çalışmanın kayıtlı seçimi korunur. Süre düzeltme, elle çalışma ekleme, tamamlamayı geri alma ve hedef değiştirme web ile aynı pencerelerde yapılır. Seans hedefleri, günlük dağılımlar ve düzenlenebilir ders takvimi ortak `studyPlan` alanında saklanır. Eski serbest görevler arşiv görünümünde korunur.
+
+Yeni `workflow.js` de web dosyalarıyla birlikte APK'ya paketlenir ve yalnızca yerel izin verilen dosya listesinde sunulur. Android testleri çevrimdışı hedef düzenleme, elle süre ekleme, kayıt sonrası tamamlama, saniye hassasiyetinde düzeltme ve sayımı geri almayı da doğrular.

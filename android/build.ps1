@@ -34,7 +34,7 @@ try{
   $webRoot=Join-Path $buildRoot 'assets\web'
   New-Item -ItemType Directory -Force -Path $webRoot,(Join-Path $webRoot 'assets') | Out-Null
   $siteRoot=Split-Path $projectRoot -Parent
-  foreach($webFile in @('index.html','plan.js','plan.css','mobile.css','favicon.ico','site.webmanifest')){Copy-Item -LiteralPath (Join-Path $siteRoot $webFile) -Destination $webRoot}
+  foreach($webFile in @('index.html','plan.js','workflow.js','plan.css','mobile.css','favicon.ico','site.webmanifest')){Copy-Item -LiteralPath (Join-Path $siteRoot $webFile) -Destination $webRoot}
   foreach($webImage in @('logo.png','icon-192.png','icon-512.png','apple-touch-icon.png')){Copy-Item -LiteralPath (Join-Path $siteRoot ('assets\'+$webImage)) -Destination (Join-Path $webRoot 'assets')}
   Invoke-Checked (Join-Path $toolsRoot 'aapt2.exe') @('compile','--dir',(Join-Path $buildRoot 'res'),'-o',$compiled)
   $generated=Join-Path $buildRoot 'generated';$classes=Join-Path $buildRoot 'classes';$dex=Join-Path $buildRoot 'dex'

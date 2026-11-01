@@ -31,7 +31,7 @@ public final class TimerNotification {
   }
   static Notification build(Context c){
     JSONObject data=Store.data(c);long start=TimerModel.running(data);boolean running=start>0;
-    String course=courseName(data,running?data.optString("runningCourse"):Store.selectedCourse(c));
+    String course=running?courseName(data,data.optString("runningCourse")):"Çalışma";
     Intent activity=new Intent(c,MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
     PendingIntent open=PendingIntent.getActivity(c,0,activity,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
     String status=Store.status(c),text=running?course+" · Çalışma sürüyor":course+" · 00:00:00 · Başlamaya hazır";

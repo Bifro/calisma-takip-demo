@@ -26,10 +26,10 @@ Ocak sonrasındaki tüm dersleri kapsayan tekrar programı ayrıca hazırlanacak
 - Normal mesai 2 saat, boş hafta içi 4 saat, hafta sonu 4–5 saat, halı saha 2–3 saat. Aralıkların alt sınırı başlangıç hedefidir. Gün türü Planım sekmesinde, kesin süre takvimde değiştirilebilir. Eksik süre borç olarak taşınmaz.
 - İlk açılışta boş günlük hedefler doldurulur; mevcut hedefler korunur. 29 Ekim boş hafta içi olarak tanımlıdır.
 - 27–28 Ekim için bildirilen günlük 2 saat, mevcut kayıtların yalnızca eksik kısmı eklenerek tamamlanır. Bu aktarım bir kez yapılır. Başlangıç verisinin cihazdaki kopyası `ct_before_plan_v1` anahtarında tutulur.
-- Her dersin tamamlanan seansları ve tamamlanma durumu izlenir. Kronometreden kaydederken seans sayımı ve ders seçilebilir; süre kaydı kendi başına seans hedefini artırmaz. Seans sayımı seçimi çalışan kronometreyle birlikte saklanır.
+- Kronometre yalnızca süre tutar. Ders ve hedef, kaydın yanındaki **Seans tamamlandı** düğmesiyle sonradan seçilir. Aynı çalışma iki kez sayılmaz; sayım geri alınabilir veya başka hedefe taşınabilir. Gün aşan parçalar tek çalışma olarak gösterilir.
 - Pediatri için 29 Ekim itibarıyla kalan 20 seans, 3 Kasım erken bitirme hedefidir. Seans başına yaklaşık 20 sayfa yalnızca tahmindir. Genel bitiş tarihi 9 Kasım olarak kalır.
 - 29 Ekim 2 ek seans, 30 Ekim 2, 31 Ekim 5, 1 Kasım 5, 2–3 Kasım ortak 5 seans olarak gösterilir. Toplam 19 olduğu için 1 seansın henüz atanmadığı açıkça belirtilir.
-- Elle eklenen seanslar yalnızca ilerlemeyi artırır; ayrıca çalışma süresi oluşturmaz. Aynı çalışma hem elle hem kronometreden eklenmemelidir. İlerleme kayıtları geri alınabilir.
+- **Elle süre ekle** ile tarih, saat, dakika, saniye ve not girilebilir. Mevcut çalışma düzeltilebilir. Eski, süreye bağlı olmayan seans kayıtları Seanslar → Seans geçmişi altında korunur ve düzenlenebilir.
 
 ## İnceleme bulguları ve kayıt davranışı
 
@@ -78,3 +78,12 @@ Android APK ve kilit ekranı bildirimi `android/` projesinde eklendi. Android `s
 2.0.0 ile aynı web arayüzünün tüm sekmeleri APK içine paketlenir. Android içinde genel düzenlemeler de yerel işlem kuyruğundan geçer; kilit ekranı ve uygulama tek telefon kaydını kullanır. Web tarafı mevcut Firestore yolunu kullanmayı sürdürür. Android'e özgü veri köprüsü normal tarayıcıda etkin değildir. APK arayüz dosyaları derleme sırasında bu deponun web dosyalarından kopyalanır; yeni tasarım için APK yeniden derlenir.
 
 Kaynaklar: [Android bildirim kronometresi ve eylemleri](https://developer.android.com/reference/android/app/Notification.Builder), [web service worker çalışma ömrü](https://chromium.googlesource.com/chromium/src/+/main/docs/security/service-worker-security-faq.md).
+
+## 3.0 · Çalışma kaydı ve hedef seans akışı
+
+- Görevler sekmesi **Seanslar** oldu. Her ders için seans hedefi, ayrıca aynı derse bağlı özel hedefler eklenebilir. Adet, başlangıç/bitiş, yaklaşık sayfa ve isteğe bağlı gün/tarih aralığı dağılımı tek editördedir.
+- Başlat/Kaydet ve kilit ekranı kontrolleri yeni çalışmaları otomatik seans saymaz. Önce süre kaydedilir; çalışma kartındaki Seans tamamlandı ile ders/hedef ve adet seçilir. Eski sürümde sayım seçilerek başlatılmış devam eden çalışma, eski seçimini korur.
+- Mevcut Pediatri 20 seans hedefi, 19 seanslık dağılımı, eski tamamlamalar ve ders tarihleri değiştirilmeden aktarılır. Eski serbest görevler silinmez; Seanslar → Önceki görevler altında gösterilir.
+- Planım'da plan başlığı/puan hedefi, ders adları ve tarihleri düzenlenebilir; ders eklenebilir ve arşivlenebilir. Ders kimliği tarihten ayrılır; tarih değişikliği eski kayıtların bağlantısını bozmaz. Başka dersin tarihi kendiliğinden kaydırılmaz.
+- Çalışma düzenleme ve seans tamamlama penceresi açıkken arka plandaki bulut okuması ertelenir; eşzamanlı düzenlemeler mevcut sürüm önkoşulu ve üç yönlü karşılaştırmadan geçer.
+- Aynı arayüz ve akış APK 3.0.0 içine paketlenir. Normal tarayıcı ve Android aynı Firestore verisini kullanır.

@@ -195,7 +195,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .panel-add-row input::placeholder{color:var(--text3)}
 .btn-add-sm{background:var(--green);color:#fff;border:none;border-radius:var(--r-sm);padding:7px 12px;font-size:12px;cursor:pointer;font-family:var(--sans);white-space:nowrap}
 </style>
-<link rel="stylesheet" href="plan.css"/>
+<link rel="stylesheet" href="plan.css?v=20261101-3"/>
 <link rel="stylesheet" href="mobile.css"/>
 </head>
 <body>
@@ -216,7 +216,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
   <div class="tabs">
     <button class="tab active" onclick="switchTab('timer',this)">Kronometre</button>
     <button class="tab" onclick="switchTab('stats',this)">İstatistik</button>
-    <button class="tab" onclick="switchTab('tasks',this)">Görevler</button>
+    <button class="tab" onclick="switchTab('tasks',this)">Seanslar</button>
     <button class="tab" onclick="switchTab('calendar',this)">Takvim</button>
     <button class="tab" onclick="switchTab('plan',this)">Planım</button>
   </div>
@@ -232,8 +232,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
           <button class="btn-start" id="btnStart" onclick="startTimer()">▶ Başlat</button>
           <button class="btn-stop" id="btnStop" onclick="stopTimer()" disabled>■ Kaydet</button>
         </div>
-        <label class="plan-timer-label"><input type="checkbox" id="countPlanSession" onchange="syncNativeSelection()"/> Bu çalışmayı tamamlanan seans olarak say</label>
-        <label class="plan-timer-course">Ders<select class="plan-select" id="timerCourse" onchange="syncNativeSelection()"></select></label>
+        
+        
         <div class="today-info" id="todayInfo"></div>
       </div>
       <div id="planToday"></div>
@@ -242,7 +242,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
         <div class="stat-card"><div class="stat-label">Bu Hafta</div><div class="stat-value" id="s-week">—</div></div>
         <div class="stat-card"><div class="stat-label">Bu Ay</div><div class="stat-value" id="s-month">—</div></div>
       </div>
-      <div class="sec-label">Son seanslar</div>
+      <div class="work-head work-section-head"><div class="sec-label">Son çalışmalar</div><button class="work-edit" type="button" onclick="openWorkEditor()">+ Elle süre ekle</button></div>
       <div class="session-list" id="recentList"></div>
     </div>
 
@@ -256,21 +256,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
       </div>
       <div class="week-summary" id="weekSummary"></div>
       <div class="week-grid" id="weekGrid"></div>
-      <div class="sec-label">Tüm seanslar</div>
+      <div class="work-head work-section-head"><div class="sec-label">Tüm çalışmalar</div><button class="work-edit" type="button" onclick="openWorkEditor()">+ Elle süre ekle</button></div>
       <div class="session-list" id="allList"></div>
     </div>
 
     <!-- TASKS -->
     <div id="tab-tasks" class="section">
-      <div class="period-tabs">
-        <button class="ptab active" onclick="switchPeriod('daily',this)">Günlük</button>
-        <button class="ptab" onclick="switchPeriod('weekly',this)">Haftalık</button>
-      </div>
-      <div class="task-input-row">
-        <input type="text" class="task-input" id="taskInput" placeholder="Yeni görev..."/>
-        <button class="btn-add" onclick="addTask()">+ Ekle</button>
-      </div>
-      <div class="task-list" id="taskList"></div>
+      <div class="work-head work-section-head"><h2>Hedef seanslar</h2><button class="work-edit" type="button" onclick="openTargetEditor()">+ Hedef ekle</button></div>
+      <p class="workflow-intro">Hedeflerini burada düzenle. Çalıştıktan sonra Kronometredeki kaydın yanından “Seans tamamlandı” ile ilerlemeni işle.</p>
+      <div id="sessionTargets"></div>
     </div>
 
     <!-- CALENDAR -->
@@ -309,31 +303,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
           <div class="goal-bar-wrap"><div class="goal-bar-fill" id="weekGoalFill" style="width:0%"></div></div>
         </div>
 
-        <!-- Günlük görevler -->
-        <div class="panel-section">
-          <div class="panel-section-label">Günlük görevler</div>
-          <div class="panel-task-list" id="panelDayTaskList"></div>
-          <div class="panel-add-row">
-            <input type="text" id="panelDayTaskInput" placeholder="Bu güne görev ekle..."/>
-            <button class="btn-add-sm" onclick="addDayTask()">+ Ekle</button>
-          </div>
-        </div>
-
-        <!-- Haftalık görevler -->
-        <div class="panel-section">
-          <div class="panel-section-label">Haftalık görevler</div>
-          <div class="panel-task-list" id="panelWeekTaskList"></div>
-          <div class="panel-add-row">
-            <input type="text" id="panelWeekTaskInput" placeholder="Bu haftaya görev ekle..."/>
-            <button class="btn-add-sm" onclick="addWeekTask()">+ Ekle</button>
-          </div>
-        </div>
+        <div class="panel-section"><div class="panel-section-label">Hedef seanslar</div><p id="calendarSessionTargets" class="plan-muted"></p></div>
+        <div class="panel-section"><div class="work-head"><span class="panel-section-label">Çalışmalar</span><button class="work-edit" type="button" onclick="openWorkEditor(null,selectedDay)">+ Süre ekle</button></div><div id="calendarWorkList"></div></div>
       </div>
     </div>
   </div>
 </div>
 
-<script src="plan.js?v=20261101-2"></script>
+<dialog id="workflowDialog" class="workflow-dialog" aria-labelledby="workflowTitle"><form id="workflowForm" onsubmit="saveWorkflow(event)"><div class="work-head"><h2 id="workflowTitle"></h2><button type="button" class="workflow-close" aria-label="Kapat" onclick="closeWorkflow()">×</button></div><div id="workflowBody"></div><p id="workflowError" class="plan-error" role="alert"></p><div class="workflow-footer"><button type="submit" id="workflowSave">Kaydet</button><button type="button" class="work-edit" onclick="closeWorkflow()">Vazgeç</button></div><div id="workflowExtra"></div></form></dialog>
+<script src="plan.js?v=20261101-3"></script>
+<script src="workflow.js?v=20261101-3"></script>
 <script>
 // store.dayTasks:   { "2025-04-21": [{text,done},...] }
 // store.weekTasks:  { "2025-04-14": [{text,done},...] }  key=monday
@@ -363,10 +342,10 @@ function readNativeInfo(){
   var info=JSON.parse(nativeApp().read());if(!info.ok||!info.ready)throw new Error(info.error||'İlk bağlantı bekleniyor');
   nativeInfo=info;nativeCloudPending=!!info.pending||!!info.error;nativeCloudConflict=!!info.conflict;return info;
 }
-function syncNativeSelection(){if(nativeApp())nativeApp().selection(document.getElementById('timerCourse').value,document.getElementById('countPlanSession').checked);}
+function syncNativeSelection(){}
 async function nativeTimerAction(begin){
   if(pendingSync)await flushSync();if(pendingSync||syncConflict)return;
-  try{var result=JSON.parse(nativeApp().timer(begin,document.getElementById('timerCourse').value,document.getElementById('countPlanSession').checked));
+  try{var result=JSON.parse(nativeApp().timer(begin,'',false));
     if(!result.ok)throw new Error(result.error);await refreshCloud();restoreTimer();renderAll();
   }catch(e){document.getElementById('syncNotice').hidden=false;document.getElementById('syncNotice').textContent=e.message;}
 }
@@ -531,6 +510,7 @@ async function syncToCloud(){
 async function refreshCloud(){
   if(syncBusy||syncConflict)return;
   if(pendingSync){await flushSync();return;}
+  if(typeof workflowState!=='undefined'&&workflowState)return;
   if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;
   var revision=editRevision;
   try{
@@ -575,10 +555,7 @@ function currentElapsed(){return(!running||!startMs)?0:Math.floor((Date.now()-st
 async function startTimer(){
   if(nativeApp())return nativeTimerAction(true);
   if(running)return; running=true; startMs=Date.now(); store.runningStart=startMs;
-  store.runningPlan=!!store.studyPlan&&document.getElementById('countPlanSession').checked;
-  store.runningCourse=document.getElementById('timerCourse').value||null;
-  document.getElementById('countPlanSession').disabled=true;
-  document.getElementById('timerCourse').disabled=true;
+  store.runningPlan=false;store.runningCourse=null;
   document.getElementById('btnStart').disabled=true;
   document.getElementById('btnStop').disabled=false;
   document.getElementById('timerDisplay').classList.add('running');
@@ -612,9 +589,7 @@ async function stopTimer(){
   if(dur>0&&store.runningPlan&&store.studyPlan){
     store.studyPlan.progress.push({id:sessionId,date:todayStr(),count:1,sessionGroup:sessionId,courseStart:store.runningCourse||store.studyPlan.courses[0].start});
   }
-  document.getElementById('countPlanSession').checked=false;
-  document.getElementById('countPlanSession').disabled=false;store.runningPlan=false;
-  document.getElementById('timerCourse').disabled=false;store.runningCourse=null;
+  store.runningPlan=false;store.runningCourse=null;
   startMs=null;
   document.getElementById('btnStart').disabled=false;
   document.getElementById('btnStop').disabled=true;
@@ -655,25 +630,8 @@ function renderTimerTab(){
     goalHtml='<div class="today-info-val">Çalışma hedefi yok</div>';
   }
 
-  var taskHtml='';
-  if(allTasks.length){
-    taskHtml='<div class="today-task-list">'+allTasks.map(function(tk){
-      return '<div class="today-task-chip'+(tk.done?' done-txt':'')+'"><div class="dot'+(tk.done?' done':'')+'"></div>'+esc(tk.text)+'</div>';
-    }).join('')+'</div>';
-  } else {
-    taskHtml='<div class="today-info-val">Görev yok</div>';
-  }
-
-  document.getElementById('todayInfo').innerHTML=
-    '<div class="today-info-row"><div class="today-info-icon">◎</div><div><div class="today-info-label">Hedef</div>'+goalHtml+'</div></div>'
-   +'<div class="today-info-row"><div class="today-info-icon">✓</div><div><div class="today-info-label">Görevler</div>'+taskHtml+'</div></div>';
-
-  var el=document.getElementById('recentList');
-  var recent=store.sessions.slice().reverse().slice(0,6);
-  if(!recent.length){el.innerHTML='<div class="empty">Henüz seans yok</div>';return}
-  el.innerHTML=recent.map(function(x,i){var ri=store.sessions.length-1-i;
-    return '<div class="session-item"><span class="session-date">'+fmtDateShort(x.date)+'</span><div class="session-right"><span class="session-dur">'+fmtDur(x.duration)+'</span><button class="btn-del" onclick="deleteSession('+ri+')">✕</button></div></div>';
-  }).join('');
+  document.getElementById('todayInfo').innerHTML='<div class="today-info-row"><div class="today-info-icon">◎</div><div><div class="today-info-label">Saat hedefi</div>'+goalHtml+'</div></div><div class="today-info-row"><div class="today-info-icon">✓</div><div><div class="today-info-label">Bugünün seans planı</div><div class="today-info-val">'+plannedSessionText(t)+'</div></div></div>';
+  renderWorkList('recentList',workGroups().slice(0,6));
 }
 
 // ── Stats week offset ──
@@ -729,21 +687,10 @@ function renderStatsTab(){
       +'</div>';
   }).join('');
 
-  var el=document.getElementById('allList'),all=store.sessions.slice().reverse();
-  if(!all.length){el.innerHTML='<div class="empty">Henüz seans yok</div>';return}
-  el.innerHTML=all.map(function(x,i){var ri=store.sessions.length-1-i;
-    return '<div class="session-item"><span class="session-date">'+fmtDateShort(x.date)+'</span><div class="session-right"><span class="session-dur">'+fmtDur(x.duration)+'</span><button class="btn-del" onclick="deleteSession('+ri+')">&#10005;</button></div></div>';
-  }).join('');
+  renderWorkList('allList',workGroups());
 }
 
-// ── Render tasks (genel) ──
-function renderTasksTab(){
-  var tasks=(store.tasks[currentPeriod]||[]),el=document.getElementById('taskList');
-  if(!tasks.length){el.innerHTML='<div class="empty">Henüz görev yok</div>';return}
-  el.innerHTML=tasks.map(function(t,i){
-    return '<div class="task-item"><input type="checkbox" class="task-cb"'+(t.done?' checked':'')+' onchange="toggleTask('+i+')" /><span class="task-text'+(t.done?' done':'')+'">'+esc(t.text)+'</span><button class="btn-del" onclick="deleteTask('+i+')">✕</button></div>';
-  }).join('');
-}
+function renderTasksTab(){renderSessionTargets();}
 
 // ── Calendar ──
 function renderCalendar(){
@@ -776,7 +723,7 @@ function renderCalendar(){
       else if(isPast) cls+=' goal-missed';
     }
 
-    var allDots=(store.dayTasks[ds]||[]).concat(store.weekTasks[wk]||[]).slice(0,6);
+    var allDots=[];targets().filter(function(t){return !t.archived;}).forEach(function(t){(t.schedule||[]).forEach(function(slot){if(ds>=slot.start&&ds<=slot.end)allDots.push({done:targetCompleted(t,slot.start,slot.end)>=slot.count});});});allDots=allDots.slice(0,6);
     var dots=allDots.map(function(tk){return '<div class="cal-dot'+(tk.done?' done':'')+'"></div>';}).join('');
 
     var plannedCourse=courseForDay(ds);
@@ -820,13 +767,8 @@ function renderDayPanel(ds){
   var pct=wkGoalH>0?Math.min(100,Math.round(wkSecs/(wkGoalH*3600)*100)):0;
   document.getElementById('weekGoalFill').style.width=pct+'%';
 
-  // day tasks
-  renderPanelTaskList('panelDayTaskList', store.dayTasks[ds]||[], 'day', ds);
-  // week tasks
-  renderPanelTaskList('panelWeekTaskList', store.weekTasks[wk]||[], 'week', wk);
-
-  document.getElementById('panelDayTaskInput').value='';
-  document.getElementById('panelWeekTaskInput').value='';
+  document.getElementById('calendarSessionTargets').innerHTML=plannedSessionText(ds);
+  renderWorkList('calendarWorkList',workGroups().filter(function(g){return g.parts.some(function(p){return p.date===ds;});}));
 }
 
 function renderPanelTaskList(elId, tasks, type, key){
@@ -916,9 +858,6 @@ function renderAll(){renderTimerTab();renderStatsTab();renderTasksTab();renderCa
 function restoreTimer(){
   clearInterval(timerInterval);
   running=!!store.runningStart;startMs=store.runningStart;
-  document.getElementById('countPlanSession').checked=running&&!!store.runningPlan;
-  document.getElementById('countPlanSession').disabled=running;
-  document.getElementById('timerCourse').disabled=running;
   document.getElementById('btnStart').disabled=running;
   document.getElementById('btnStop').disabled=!running;
   document.getElementById('timerDisplay').classList.toggle('running',running);
@@ -933,18 +872,12 @@ function restoreTimer(){
   renderAll();
   document.getElementById('loadingOverlay').classList.add('hidden');
   document.getElementById('loadingOverlay').setAttribute('aria-hidden','true');
-  if(nativeApp()){
-    if(nativeInfo&&!running){document.getElementById('countPlanSession').checked=!!nativeInfo.selectedCount;if(nativeInfo.selectedCourse)document.getElementById('timerCourse').value=nativeInfo.selectedCourse;}
-    syncNativeSelection();
-  }
   setInterval(refreshCloud,30000);
   // Browser timers may pause while the phone is locked. Recompute from startMs on return.
   function resumeView(){if(!document.hidden){if(running)tick();renderTimerTab();refreshCloud();}}
   document.addEventListener('visibilitychange',resumeView);
   window.addEventListener('pageshow',resumeView);
-  document.getElementById('taskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addTask();});
-  document.getElementById('panelDayTaskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addDayTask();});
-  document.getElementById('panelWeekTaskInput').addEventListener('keydown',function(e){if(e.key==='Enter')addWeekTask();});
+  document.getElementById('workflowDialog').addEventListener('cancel',function(event){if(workflowSaving)event.preventDefault();else workflowState=null;});
 })();
 </script>
 <script>

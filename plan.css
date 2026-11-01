@@ -31,3 +31,25 @@
 .plan-form input:focus-visible,.plan-form select:focus-visible,button:focus-visible{outline:2px solid var(--green);outline-offset:3px}
 .tabs{padding-left:12px;padding-right:12px}.tab{font-size:11px}
 @media(max-width:360px){.content{padding:14px}.plan-card{padding:12px}.tab{font-size:10px}.plan-row{gap:6px}}
+/* Work records and session goals share one post-study workflow. */
+.work-section-head{margin:0 0 12px}.work-section-head .sec-label{margin:0}.work-section-head h2{font-size:17px}
+.work-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}.work-head>span{min-width:0}.work-head strong{flex-shrink:0;font:500 14px var(--mono)}
+.work-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px}
+.work-card .work-head{font-size:12px;color:var(--text2);margin-bottom:12px}.work-card .work-head strong{color:var(--text)}
+.work-actions{display:flex;align-items:center;gap:8px;justify-content:space-between;margin-top:10px;flex-wrap:wrap}
+.work-complete,.work-done,.work-edit{font:12px var(--sans);border:1px solid var(--border2);border-radius:8px;padding:9px 11px;min-height:44px;cursor:pointer;background:var(--bg3);color:var(--text);text-decoration:none}
+.work-complete{color:var(--green);border-color:var(--green);background:var(--green-dim)}.work-done{color:var(--green);border-color:var(--green-dim);background:transparent}.work-edit{background:transparent;color:var(--text2)}
+.workflow-intro{font-size:13px;line-height:1.7;color:var(--text2);margin-bottom:16px}.workflow-details{border-top:1px solid var(--border);margin:14px 0;padding-top:12px;color:var(--text2);font-size:13px;line-height:1.65}
+.workflow-details summary,.work-part summary{cursor:pointer;padding:8px 0;color:var(--text);min-height:40px}.legacy-task{padding:8px 0;border-bottom:1px solid var(--border)}.legacy-task small{display:block;color:var(--text3)}
+.target-card .work-head h2{margin-bottom:0}.plan-large small{font:13px var(--sans);color:var(--text2)}
+.workflow-dialog{background:var(--bg2);color:var(--text);border:1px solid var(--border2);border-radius:16px;padding:20px;width:min(460px,calc(100% - 24px));max-height:calc(100dvh - 32px);margin:auto;overflow-y:auto;box-shadow:0 20px 80px #0008}
+.workflow-dialog::backdrop{background:rgba(0,0,0,.75)}.workflow-dialog h2{font-size:18px;font-weight:500;line-height:1.45}.workflow-dialog .work-head{margin-bottom:16px}
+.workflow-close{font:25px var(--sans);background:transparent;border:0;color:var(--text2);width:44px;height:44px;flex-shrink:0;cursor:pointer}
+.workflow-dialog label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text2);margin:12px 0;min-width:0}
+.workflow-dialog input,.workflow-dialog select{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);font:16px var(--sans);padding:11px 10px;width:100%;min-width:0;min-height:48px;color-scheme:dark}
+.duration-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0}.work-part{border:1px solid var(--border);border-radius:10px;padding:12px;margin:12px 0;min-width:0}.work-part legend{font-size:12px;color:var(--text2);padding:0 5px}
+.workflow-footer{display:flex;gap:10px;position:sticky;bottom:-20px;padding:14px 0 8px;background:var(--bg2);margin-top:10px}.workflow-footer button{flex:1;min-height:48px;border-radius:8px;cursor:pointer;font:14px var(--sans)}
+#workflowSave{background:var(--green);color:white;border:0}#workflowSave:disabled{opacity:.5}
+.workflow-danger{background:transparent;border:1px solid var(--red-dim);color:var(--red);border-radius:8px;padding:10px 12px;min-height:44px;font:13px var(--sans);margin-top:16px;cursor:pointer}
+.schedule-edit-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;border:1px solid var(--border);border-radius:10px;padding:10px;margin:10px 0}.schedule-edit-row label{margin:0}.schedule-edit-row>button{align-self:end}
+@media(max-width:360px){.work-head{gap:6px}.work-card{padding:11px}.work-edit{padding:8px}.workflow-dialog{padding:16px}.workflow-footer{bottom:-16px}.duration-fields{gap:8px}.work-actions>button:first-child{max-width:100%;white-space:normal;text-align:left}}
