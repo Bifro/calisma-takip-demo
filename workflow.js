@@ -23,6 +23,7 @@ function ensureSessionPlan(){
   }return changed;
 }
 function targets(){return store.studyPlan&&store.studyPlan.sessionTargets||[];}
+function sortSessionTargets(list){return list.slice().sort(function(a,b){return String(a.deadline||'9999-12-31').localeCompare(String(b.deadline||'9999-12-31'))||String(a.from||'').localeCompare(String(b.from||''))||String(a.title||'').localeCompare(String(b.title||''),'tr');});}
 function targetById(id){return targets().find(function(t){return t.id===id;});}
 function targetForProgress(item){
   if(item.targetId)return targetById(item.targetId);
@@ -43,7 +44,7 @@ function renderWorkList(container,groups){
   var node=document.getElementById(container);if(!node)return;
   if(!groups.length){node.innerHTML='<p class="empty">Henüz çalışma kaydı yok.</p>';return;}
   node.innerHTML=groups.map(function(g){var completed=linkedProgress(g),count=completed.reduce(function(n,p){return n+(Number(p.count)||0);},0),c=completed[0]&&courseByKey(completed[0].courseStart||courseKey(store.studyPlan.courses[0]));
-    return '<article class="work-card"><div class="work-head"><span>'+esc(fmtDateShort(g.first))+(g.last!==g.first?' – '+esc(fmtDateShort(g.last)):'')+'</span><strong>'+esc(fmtDur(g.duration))+'</strong></div>'
+    return '<article class="work-card"><div class="work-head"><span>'+esc(fmtDateShort(g.first))+(g.last!==g.first?' – '+esc(fmtDateShort(g.last)):'')+'</span><strong class="work-duration">'+esc(fmtDur(g.duration))+'</strong></div>'
       +(g.parts[0].note?'<p class="plan-muted">'+esc(g.parts[0].note)+'</p>':'')
       +'<div class="work-actions"><button class="'+(count?'work-done':'work-complete')+'" type="button" onclick="openCompletion('+jsArg(g.key)+')">'+(count?'✓ '+count+' seans · '+esc(c?c.name:'Tamamlandı'):'Seans tamamlandı')+'</button><button class="work-edit" type="button" onclick="openWorkEditor('+jsArg(g.key)+')">Düzenle</button></div></article>';
   }).join('');
@@ -58,7 +59,7 @@ function scheduleSummary(target){var slots=target.schedule||[],allocated=slots.r
 function renderSessionTargets(){
   var node=document.getElementById('sessionTargets');if(!node)return;
   if(!store.studyPlan){node.innerHTML='<p class="empty">Planın yüklenmesi bekleniyor.</p>';return;}
-  var active=targets().filter(function(t){return !t.archived;});
+  var active=sortSessionTargets(targets().filter(function(t){return !t.archived;}));
   node.innerHTML=active.map(function(t){var c=courseByKey(t.courseStart),done=targetCompleted(t),has=t.total!==null&&t.total!==undefined,left=has?Math.max(0,t.total-done):null;
     return '<article class="plan-card target-card"><div class="work-head"><h2>'+esc(t.title)+'</h2><button class="work-edit" type="button" onclick="openTargetEditor('+jsArg(t.id)+')">Düzenle</button></div><p class="plan-muted">'+esc(c?c.name:'Ders')+' · '+planDate(t.from)+' – '+planDate(t.deadline)+'</p>'
       +'<div class="plan-large">'+done+(has?' / '+esc(t.total):'')+' <small>seans</small></div><p class="plan-muted">'+(has?(left+' seans kaldı'):'Hedef adedi henüz belirlenmedi.')+'</p>'
@@ -70,9 +71,18 @@ function renderSessionTargets(){
   node.innerHTML+='<details class="workflow-details"><summary>Seans geçmişi ('+progress.reduce(function(n,p){return n+(Number(p.count)||0);},0)+')</summary>'+progress.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).map(function(p){var t=targetForProgress(p),c=courseByKey(p.courseStart||courseKey(store.studyPlan.courses[0]));return '<div class="plan-row"><span>'+planDate(p.date)+' · '+esc(t?t.title:c?c.name:'Ders')+' · '+esc(p.count)+' seans'+(!p.sessionGroup?' · süreye bağlı değil':'')+'</span><button class="work-edit" type="button" onclick="openProgressEditor('+jsArg(p.id)+')">Düzenle</button></div>';}).join('')+'</details>'+renderLegacyTasks();
   var archived=targets().filter(function(t){return t.archived;});if(archived.length)node.innerHTML+='<details class="workflow-details"><summary>Arşivlenen hedefler</summary>'+archived.map(function(t){return '<div class="plan-row"><span>'+esc(t.title)+'</span><button type="button" class="work-edit" onclick="restoreTarget('+jsArg(t.id)+')">Yeniden aç</button></div>';}).join('')+'</details>';
 }
+function sessionPlansForDay(date){
+  var rows=[];sortSessionTargets(targets().filter(function(t){return !t.archived;})).forEach(function(t){
+    var schedule=t.schedule||[];
+    if(schedule.length){schedule.forEach(function(s){if(date>=s.start&&date<=s.end)rows.push({target:t,start:s.start,end:s.end,count:Number(s.count),completed:targetCompleted(t,s.start,s.end),shared:s.start!==s.end});});}
+    else if(Number(t.total)>0&&date>=t.from&&date<=t.deadline)rows.push({target:t,start:t.from,end:t.deadline,count:Number(t.total),completed:targetCompleted(t),shared:t.from!==t.deadline});
+  });return rows;
+}
 function plannedSessionText(date){
-  var rows=[];targets().filter(function(t){return !t.archived;}).forEach(function(t){(t.schedule||[]).forEach(function(s){if(date>=s.start&&date<=s.end)rows.push(esc(t.title)+': '+targetCompleted(t,s.start,s.end)+' / '+esc(s.count)+' seans'+(s.start!==s.end?' · '+planDate(s.start)+'–'+planDate(s.end)+' ortak hedef':''));});});
-  return rows.length?rows.join('<br>'):'Bu güne seans dağılımı atanmadı.';
+  var rows=sessionPlansForDay(date);return rows.length?rows.map(function(p){return esc(p.target.title)+': '+p.completed+' / '+p.count+' seans'+(p.shared?' · '+planDate(p.start)+' – '+planDate(p.end)+' ortak hedef':'');}).join('<br>'):'Bu güne seans hedefi atanmadı.';
+}
+function calendarSessionHtml(date,course){
+  var plans=sessionPlansForDay(date);return plans.slice(0,2).map(function(p){return '<span class="cal-session'+(p.completed>=p.count?' done':'')+'" title="'+esc(p.target.title+' · '+p.completed+' / '+p.count+' seans'+(p.shared?' · tarih aralığının ortak hedefi':''))+'">'+(!course||p.target.title!==course.name?'<span class="cal-session-title">'+esc(p.target.title)+'</span>':'')+'<span class="cal-session-count">'+p.completed+'/'+p.count+'<span class="cal-session-unit"> seans</span></span>'+(p.shared?'<span class="cal-session-shared">Ortak</span>':'')+'</span>';}).join('')+(plans.length>2?'<span class="cal-session-more">+'+(plans.length-2)+' hedef</span>':'');
 }
 function showWorkflow(kind,title,body,state,extra){
   workflowState=Object.assign({kind:kind},state||{});var dialog=document.getElementById('workflowDialog');
@@ -81,7 +91,7 @@ function showWorkflow(kind,title,body,state,extra){
   document.getElementById('workflowSave').disabled=false;if(!dialog.open)dialog.showModal();
 }
 function closeWorkflow(){if(workflowSaving)return;document.getElementById('workflowDialog').close();workflowState=null;}
-function targetOptions(selected){return targets().filter(function(t){return !t.archived||t.id===selected;}).map(function(t){var c=courseByKey(t.courseStart);return '<option value="'+esc(t.id)+'"'+(t.id===selected?' selected':'')+'>'+esc(c&&c.name!==t.title?c.name+' · '+t.title:t.title)+(t.total!==null?' · '+Math.max(0,t.total-targetCompleted(t))+' kaldı':' · hedef belirlenmedi')+'</option>';}).join('');}
+function targetOptions(selected){return sortSessionTargets(targets().filter(function(t){return !t.archived||t.id===selected;})).map(function(t){var c=courseByKey(t.courseStart);return '<option value="'+esc(t.id)+'"'+(t.id===selected?' selected':'')+'>'+esc(c&&c.name!==t.title?c.name+' · '+t.title:t.title)+(t.total!==null?' · '+Math.max(0,t.total-targetCompleted(t))+' kaldı':' · hedef belirlenmedi')+'</option>';}).join('');}
 function defaultTargetFor(work){var c=courseForDay(work.last),t=targets().find(function(t){return !t.archived&&c&&t.courseStart===courseKey(c);});return t||targets().find(function(t){return !t.archived;});}
 function completionBody(targetId,count,date,standalone){return '<p class="plan-muted">Seansın tamamlandıysa hedefinden düş. Süre kaydın değişmez.</p><label>Ders / hedef<select id="completionTarget" required>'+targetOptions(targetId)+'</select></label><label>Seans adedi<input id="completionCount" type="number" min="1" max="1000" step="1" value="'+esc(count)+'" required></label>'+(standalone?'<label>Tarih<input id="completionDate" type="date" value="'+esc(date)+'" max="'+todayStr()+'" required></label>':'');}
 function openCompletion(key){var work=findWork(key);if(!work)return;var linked=linkedProgress(work),assigned=linked[0]&&targetForProgress(linked[0]),target=assigned||defaultTargetFor(work);if(!target)return;
@@ -121,7 +131,7 @@ function courseOptions(selected){return store.studyPlan.courses.map(function(c){
 function scheduleRow(slot,i){return '<div class="schedule-edit-row" id="scheduleRow'+i+'"><label>Başlangıç<input type="date" id="slotStart'+i+'" value="'+esc(slot.start)+'"></label><label>Bitiş<input type="date" id="slotEnd'+i+'" value="'+esc(slot.end)+'"></label><label>Seans<input type="number" min="1" max="10000" step="1" id="slotCount'+i+'" value="'+esc(slot.count)+'"></label><button type="button" class="work-edit" onclick="removeScheduleRow('+i+')">Kaldır</button></div>';}
 function openTargetEditor(id){var t=id&&targetById(id),active=courseForDay(todayStr())||store.studyPlan.courses.find(function(c){return !c.archived;});if(!active)return;
   var value=t||{courseStart:courseKey(active),title:'',total:null,from:todayStr(),deadline:active.end,schedule:[]};
-  showWorkflow('target',t?'Seans hedefini düzenle':'Yeni seans hedefi','<label>Ders<select id="targetCourse">'+courseOptions(value.courseStart)+'</select></label><label>Hedef adı<input id="targetTitle" type="text" maxlength="120" value="'+esc(value.title)+'" placeholder="Örn. Pediatri soru çözümü" required></label><label>Toplam seans<input id="targetTotal" type="number" min="0" max="100000" step="1" value="'+esc(value.total===null?'':value.total)+'" placeholder="Henüz belirlenmediyse boş bırak"></label><div class="duration-fields"><label>Başlangıç<input id="targetFrom" type="date" value="'+esc(value.from)+'" required></label><label>Hedef bitiş<input id="targetDeadline" type="date" value="'+esc(value.deadline)+'" required></label></div><details class="workflow-details"><summary>Günlere dağılım ve diğer ayrıntılar</summary><label>Bir seansta yaklaşık sayfa<input type="number" id="targetPages" min="1" max="100000" step="1" value="'+esc(value.pagesPerSession||'')+'" placeholder="İsteğe bağlı"></label><div id="scheduleRows">'+(value.schedule||[]).map(scheduleRow).join('')+'</div><button type="button" class="work-edit" onclick="addScheduleRow()">Gün / tarih aralığı ekle</button><p class="plan-muted">Bir tarih aralığındaki seans adedi ortak hedeftir. Eksikler başka güne otomatik aktarılmaz.</p></details>',{id:id||null,slotCount:(value.schedule||[]).length,removedSlots:[]},t?'<button type="button" class="workflow-danger" onclick="archiveTarget()">Hedefi arşivle</button>':'');
+  showWorkflow('target',t?'Seans hedefini düzenle':'Yeni seans hedefi','<label>Ders<select id="targetCourse">'+courseOptions(value.courseStart)+'</select></label><label>Hedef adı<input id="targetTitle" type="text" maxlength="120" value="'+esc(value.title)+'" placeholder="Örn. Pediatri soru çözümü" required></label><label>Toplam seans<input id="targetTotal" type="number" min="0" max="100000" step="1" value="'+esc(value.total===null?'':value.total)+'" placeholder="Henüz belirlenmediyse boş bırak"></label><div class="duration-fields"><label>Başlangıç<input id="targetFrom" type="date" value="'+esc(value.from)+'" required></label><label>Hedef bitiş<input id="targetDeadline" type="date" value="'+esc(value.deadline)+'" required></label></div><details class="workflow-details"><summary>Günlere dağılım ve diğer ayrıntılar</summary><label>Bir seansta yaklaşık sayfa<input type="number" id="targetPages" min="1" max="100000" step="1" value="'+esc(value.pagesPerSession||'')+'" placeholder="İsteğe bağlı"></label><div id="scheduleRows">'+(value.schedule||[]).map(scheduleRow).join('')+'</div><button type="button" class="work-edit" onclick="addScheduleRow()">Gün / tarih aralığı ekle</button><p class="plan-muted">Günlere dağılım boşsa hedef, seçtiğin tarih aralığının ortak seansı olarak takvimde görünür. Günlere dağıttığında yalnızca bu günlerde gösterilir. Eksikler başka güne aktarılmaz.</p></details>',{id:id||null,slotCount:(value.schedule||[]).length,removedSlots:[]},t?'<button type="button" class="workflow-danger" onclick="archiveTarget()">Hedefi arşivle</button>':'');
 }
 function addScheduleRow(){var i=workflowState.slotCount++;document.getElementById('scheduleRows').insertAdjacentHTML('beforeend',scheduleRow({start:document.getElementById('targetFrom').value,end:document.getElementById('targetFrom').value,count:1},i));}
 function removeScheduleRow(i){workflowState.removedSlots.push(i);document.getElementById('scheduleRow'+i).remove();}

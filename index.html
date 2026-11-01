@@ -195,7 +195,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .panel-add-row input::placeholder{color:var(--text3)}
 .btn-add-sm{background:var(--green);color:#fff;border:none;border-radius:var(--r-sm);padding:7px 12px;font-size:12px;cursor:pointer;font-family:var(--sans);white-space:nowrap}
 </style>
-<link rel="stylesheet" href="plan.css?v=20261101-3"/>
+<link rel="stylesheet" href="plan.css?v=20261101-4"/>
 <link rel="stylesheet" href="mobile.css"/>
 </head>
 <body>
@@ -274,6 +274,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
         <span class="cal-month-label" id="calMonthLabel"></span>
         <button class="cal-nav" aria-label="Sonraki ay" onclick="calNext()">›</button>
       </div>
+      <p class="cal-key">Seanslar: tamamlanan / hedef</p>
       <div class="cal-grid" id="calGrid"></div>
 
       <!-- Seçili gün paneli -->
@@ -311,8 +312,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 </div>
 
 <dialog id="workflowDialog" class="workflow-dialog" aria-labelledby="workflowTitle"><form id="workflowForm" onsubmit="saveWorkflow(event)"><div class="work-head"><h2 id="workflowTitle"></h2><button type="button" class="workflow-close" aria-label="Kapat" onclick="closeWorkflow()">×</button></div><div id="workflowBody"></div><p id="workflowError" class="plan-error" role="alert"></p><div class="workflow-footer"><button type="submit" id="workflowSave">Kaydet</button><button type="button" class="work-edit" onclick="closeWorkflow()">Vazgeç</button></div><div id="workflowExtra"></div></form></dialog>
-<script src="plan.js?v=20261101-3"></script>
-<script src="workflow.js?v=20261101-3"></script>
+<script src="plan.js?v=20261101-4"></script>
+<script src="workflow.js?v=20261101-4"></script>
 <script>
 // store.dayTasks:   { "2025-04-21": [{text,done},...] }
 // store.weekTasks:  { "2025-04-14": [{text,done},...] }  key=monday
@@ -551,6 +552,20 @@ function weekGoalSecs(wk){
 function weekGoalHours(wk){return weekGoalSecs(wk)/3600;}
 
 // ── Timer ──
+function fmtGoalTime(seconds){var minutes=Math.floor(Math.max(0,Number(seconds)||0)/60+1e-7);return Math.floor(minutes/60)+'s '+minutes%60+'d';}
+function dailyGoalProgress(now){
+  if(now===undefined)now=Date.now();var date=localStr(new Date(now)),saved=secsForDay(date),live=0;
+  if(running&&startMs&&!store.sessions.some(function(s){return s.timerStart===startMs;})){
+    var midnight=new Date(date+'T00:00:00').getTime();live=Math.max(0,Math.floor((now-Math.max(startMs,midnight))/1000));
+  }
+  return {worked:saved+live,saved:saved,live:live,goal:Math.max(0,Number(store.dayGoals[date])||0)*3600};
+}
+function updateDailyGoalDisplay(){
+  var worked=document.getElementById('dailyGoalWorked');if(!worked)return;var p=dailyGoalProgress();
+  worked.textContent=fmtGoalTime(p.worked);document.getElementById('dailyGoalTotal').textContent=' / '+(p.goal>0?fmtGoalTime(p.goal):'hedef yok');
+  var bar=document.getElementById('dailyGoalBar');bar.max=p.goal||1;bar.value=Math.min(p.worked,p.goal);bar.hidden=p.goal<=0;bar.setAttribute('aria-valuetext',fmtGoalTime(p.worked)+' / '+(p.goal>0?fmtGoalTime(p.goal):'hedef yok'));
+  document.getElementById('dailyGoalLive').hidden=p.live<=0;
+}
 function currentElapsed(){return(!running||!startMs)?0:Math.floor((Date.now()-startMs)/1000)}
 async function startTimer(){
   if(nativeApp())return nativeTimerAction(true);
@@ -563,6 +578,7 @@ async function startTimer(){
   timerInterval=setInterval(tick,1000); await syncToCloud();
 }
 function tick(){
+  updateDailyGoalDisplay();
   var el=currentElapsed();
   document.getElementById('timerDisplay').textContent=fmtHMS(el);
   window.laserPurple=(el>=3000);
@@ -615,22 +631,9 @@ function renderTimerTab(){
   document.getElementById('s-week').textContent=c.week?fmtDur(c.week):'—';
   document.getElementById('s-month').textContent=c.month?fmtDur(c.month):'—';
 
-  // today info box
-  var dayGoalH=store.dayGoals[t]||0;
-  var dayTasks=(store.dayTasks[t]||[]);
-  var wk=weekOf(t);
-  var weekTasks=(store.weekTasks[wk]||[]);
-  var allTasks=dayTasks.concat(weekTasks);
-
-  var goalHtml='';
-  var dayGoalS=(store.dayGoals[t]||0)*3600;
-  if(dayGoalH>0){
-    goalHtml='<div class="today-info-val goal">'+fmtDur(dayGoalS)+' hedef</div>';
-  } else {
-    goalHtml='<div class="today-info-val">Çalışma hedefi yok</div>';
-  }
-
-  document.getElementById('todayInfo').innerHTML='<div class="today-info-row"><div class="today-info-icon">◎</div><div><div class="today-info-label">Saat hedefi</div>'+goalHtml+'</div></div><div class="today-info-row"><div class="today-info-icon">✓</div><div><div class="today-info-label">Bugünün seans planı</div><div class="today-info-val">'+plannedSessionText(t)+'</div></div></div>';
+  var progress=dailyGoalProgress();
+  var goalHtml='<div class="today-info-val goal daily-goal"><span id="dailyGoalWorked">'+fmtGoalTime(progress.worked)+'</span><span id="dailyGoalTotal"> / '+(progress.goal>0?fmtGoalTime(progress.goal):'hedef yok')+'</span></div><progress id="dailyGoalBar" class="daily-goal-bar" max="'+(progress.goal||1)+'" value="'+Math.min(progress.worked,progress.goal)+'" aria-label="Bugünkü çalışma / günlük hedef"'+(progress.goal>0?'':' hidden')+'></progress><span id="dailyGoalLive" class="daily-goal-live"'+(progress.live>0?'':' hidden')+'>Devam eden çalışma dahil</span>';
+  document.getElementById('todayInfo').innerHTML='<div class="today-info-row"><div class="today-info-icon">◎</div><div class="daily-goal-area"><div class="today-info-label">Bugün / günlük hedef</div>'+goalHtml+'</div></div><div class="today-info-row"><div class="today-info-icon">✓</div><div><div class="today-info-label">Bugünün seans planı</div><div class="today-info-val">'+plannedSessionText(t)+'</div></div></div>';
   renderWorkList('recentList',workGroups().slice(0,6));
 }
 
@@ -723,15 +726,14 @@ function renderCalendar(){
       else if(isPast) cls+=' goal-missed';
     }
 
-    var allDots=[];targets().filter(function(t){return !t.archived;}).forEach(function(t){(t.schedule||[]).forEach(function(slot){if(ds>=slot.start&&ds<=slot.end)allDots.push({done:targetCompleted(t,slot.start,slot.end)>=slot.count});});});allDots=allDots.slice(0,6);
-    var dots=allDots.map(function(tk){return '<div class="cal-dot'+(tk.done?' done':'')+'"></div>';}).join('');
-
-    var plannedCourse=courseForDay(ds);
-    html+='<button type="button" class="'+cls+'" aria-label="'+fmtDateLong(ds)+(plannedCourse?' · '+esc(plannedCourse.name):'')+'" aria-pressed="'+(ds===selectedDay)+'" onclick="selectDay(\''+ds+'\')">'
+    var plans=sessionPlansForDay(ds),plannedCourse=courseForDay(ds);
+    if(plans.length)cls+=' has-session-plan';
+    var planLabel=plans.map(function(p){return p.target.title+': '+p.completed+'/'+p.count+' seans'+(p.shared?' ortak hedef':'');}).join(' · ');
+    html+='<button type="button" class="'+cls+'" aria-label="'+fmtDateLong(ds)+(plannedCourse?' · '+esc(plannedCourse.name):'')+(planLabel?' · '+esc(planLabel):'')+'" aria-pressed="'+(ds===selectedDay)+'" onclick="selectDay(\''+ds+'\')">'
       +'<span class="cal-day-num">'+day+'</span>'
       +(plannedCourse?'<span class="cal-course" title="'+esc(plannedCourse.name)+'">'+esc(plannedCourse.name)+'</span>':'')
       +(secs?'<span class="cal-day-dur">'+fmtDur(secs)+'</span>':'')
-      +(allDots.length?'<span class="cal-day-dots">'+dots+'</span>':'')
+      +calendarSessionHtml(ds,plannedCourse)
       +'</button>';
   }
   grid.innerHTML=html;

@@ -87,3 +87,10 @@ Kaynaklar: [Android bildirim kronometresi ve eylemleri](https://developer.androi
 - Planım'da plan başlığı/puan hedefi, ders adları ve tarihleri düzenlenebilir; ders eklenebilir ve arşivlenebilir. Ders kimliği tarihten ayrılır; tarih değişikliği eski kayıtların bağlantısını bozmaz. Başka dersin tarihi kendiliğinden kaydırılmaz.
 - Çalışma düzenleme ve seans tamamlama penceresi açıkken arka plandaki bulut okuması ertelenir; eşzamanlı düzenlemeler mevcut sürüm önkoşulu ve üç yönlü karşılaştırmadan geçer.
 - Aynı arayüz ve akış APK 3.0.0 içine paketlenir. Normal tarayıcı ve Android aynı Firestore verisini kullanır.
+
+## 3.1 · Takvim ve ilerleme görünümü
+
+- Gün dağılımı girilmemiş pozitif seans hedefleri de başlangıç–bitiş aralığında takvimde görünür. Çok günlük hedefler ortak toplamdır; gün başına yeniden çoğaltılmaz. Gün dağılımı varsa yalnızca belirtilen dağılım kullanılır. Gün ayrıntısı bütün hedefleri listeler.
+- Seanslar kartları ve tamamlama seçicisi bitiş tarihine göre sıralanır. Kayıt dizisinin eklenme sırası değiştirilmez.
+- Çalışma süresi kartın büyük sayısıdır; Düzenle düğmesi daha küçük ve ikincildir, dokunma alanı korunur.
+- Kronometrede bugün çalışılan süre / günlük hedef ve ilerleme çubuğu görünür. Devam eden kronometrenin yalnızca bugüne düşen bölümü canlı eklenir; kalıcı süre kaydına Kaydet sırasında geçer. Gece yarısı ve daha önce kaydedilmiş aynı sayaç için çift sayım testleri bulunur.

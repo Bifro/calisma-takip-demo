@@ -232,3 +232,38 @@ test('a slow cloud connection does not lock the next work editor after the local
   const {c}=harness();c.initializeStudyPlan();let release;c.syncToCloud=()=>new Promise(resolve=>release=resolve);
   c.workflowState={kind:'work'};const saving=c.finishWorkflow();assert.equal(c.workflowSaving,false);assert.equal(c.workflowState,null);release();await saving;
 });
+test('dated session targets without a daily distribution appear on both dates as one shared goal',()=>{
+  const {c}=harness();c.initializeStudyPlan();const t=c.saveTarget({title:'4–5 Kasım ek seanslar',courseStart:'2026-10-27',total:3,from:'2026-11-04',deadline:'2026-11-05',pagesPerSession:null,schedule:[]});
+  c.store.studyPlan.progress.push({id:'future-example',targetId:t.id,courseStart:t.courseStart,date:'2026-11-04',count:1});
+  const first=c.sessionPlansForDay('2026-11-04').find(p=>p.target.id===t.id),second=c.sessionPlansForDay('2026-11-05').find(p=>p.target.id===t.id);
+  assert.equal(first.count,3);assert.equal(first.completed,1);assert.equal(first.shared,true);assert.equal(second.count,3);assert.equal(second.completed,1);
+  assert.match(c.plannedSessionText('2026-11-05'),/ortak hedef/);assert.match(c.calendarSessionHtml('2026-11-04',null),/4–5 Kasım ek seanslar/);
+  assert.equal(c.sessionPlansForDay('2026-11-06').filter(p=>p.target.id===t.id).length,0);assert.equal(t.total,3);
+});
+test('explicit day distributions take precedence over target ranges without inventing extra daily sessions',()=>{
+  const {c}=harness();c.initializeStudyPlan();const t=c.saveTarget({title:'Dağıtılmış hedef',courseStart:'2026-10-27',total:3,from:'2026-11-04',deadline:'2026-11-05',pagesPerSession:null,schedule:[{start:'2026-11-04',end:'2026-11-04',count:2}]});
+  assert.equal(c.sessionPlansForDay('2026-11-04').find(p=>p.target.id===t.id).count,2);
+  assert.equal(c.sessionPlansForDay('2026-11-05').filter(p=>p.target.id===t.id).length,0);
+  t.archived=true;assert.equal(c.sessionPlansForDay('2026-11-04').filter(p=>p.target.id===t.id).length,0);
+});
+test('target lists and course-selection options sort by deadline without changing saved insertion order',()=>{
+  const {c}=harness();c.initializeStudyPlan();const added=c.saveTarget({title:'Geç eklenen yakın hedef',courseStart:'2026-10-27',total:2,from:'2026-11-04',deadline:'2026-11-05',pagesPerSession:null,schedule:[]});
+  const order=c.targets().map(t=>t.id).join(',');const sorted=c.sortSessionTargets(c.targets());
+  assert.equal(sorted[0].deadline,'2026-11-03');assert.equal(sorted[1].id,added.id);assert.equal(c.targets().map(t=>t.id).join(','),order);
+  const options=c.targetOptions(added.id);assert.ok(options.indexOf(added.title)<options.indexOf('Genel Cerrahi'));
+});
+test('daily goal ratio combines saved work and the running stopwatch',()=>{
+  const {c}=harness();c.initializeStudyPlan();c.store.sessions=[{id:'saved',date:'2026-11-01',duration:7200}];c.store.dayGoals['2026-11-01']=4;
+  c.running=true;c.startMs=new Date('2026-11-01T12:00:00').getTime();const p=c.dailyGoalProgress(new Date('2026-11-01T12:30:00').getTime());
+  assert.equal(p.saved,7200);assert.equal(p.live,1800);assert.equal(p.worked,9000);assert.equal(p.goal,14400);assert.equal(c.fmtGoalTime(p.worked),'2s 30d');
+});
+test('a running study spanning midnight contributes only todays portion to todays ratio',()=>{
+  const {c}=harness();c.initializeStudyPlan();c.store.sessions=[{id:'saved',date:'2026-11-01',duration:600}];c.store.dayGoals['2026-11-01']=4;
+  c.running=true;c.startMs=new Date('2026-10-31T23:30:00').getTime();const p=c.dailyGoalProgress(new Date('2026-11-01T00:30:00').getTime());
+  assert.equal(p.live,1800);assert.equal(p.worked,2400);assert.equal(p.goal,14400);
+});
+test('already saved timer records are not counted twice and missing daily goals do not fabricate a target',()=>{
+  const {c}=harness();c.initializeStudyPlan();c.running=true;c.startMs=new Date('2026-11-01T12:00:00').getTime();
+  c.store.sessions=[{id:'saved',timerStart:c.startMs,date:'2026-11-01',duration:3600}];delete c.store.dayGoals['2026-11-01'];
+  const p=c.dailyGoalProgress(new Date('2026-11-01T13:00:00').getTime());assert.equal(p.live,0);assert.equal(p.worked,3600);assert.equal(p.goal,0);assert.equal(c.store.dayGoals['2026-11-01'],undefined);
+});
