@@ -67,7 +67,7 @@ public final class Sync {
   }
   public static void request(Context context,Runnable done){
     Context c=context.getApplicationContext();executor.execute(()->{
-      try{perform(c);}catch(Exception e){Store.error(c,e instanceof IllegalStateException?e.getMessage():"Telefonda kayıtlı · internet gelince eşitlenecek");SyncJob.scheduleRetry(c);}
+      try{perform(c);}catch(Exception e){if(e instanceof WebEdits.Conflict)Store.conflict(c);Store.error(c,e instanceof IllegalStateException?e.getMessage():"Telefonda kayıtlı · internet gelince eşitlenecek");SyncJob.scheduleRetry(c);}
       TimerNotification.update(c);c.sendBroadcast(new Intent(UPDATED).setPackage(c.getPackageName()));
       if(done!=null)done.run();
     });

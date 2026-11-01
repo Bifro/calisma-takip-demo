@@ -31,11 +31,16 @@ try{
   $compiled=Join-Path $buildRoot 'resources.zip'
   Copy-Item -LiteralPath (Join-Path $projectRoot 'res') -Destination (Join-Path $buildRoot 'res') -Recurse
   Copy-Item -LiteralPath (Join-Path $projectRoot 'AndroidManifest.xml') -Destination (Join-Path $buildRoot 'AndroidManifest.xml')
+  $webRoot=Join-Path $buildRoot 'assets\web'
+  New-Item -ItemType Directory -Force -Path $webRoot,(Join-Path $webRoot 'assets') | Out-Null
+  $siteRoot=Split-Path $projectRoot -Parent
+  foreach($webFile in @('index.html','plan.js','plan.css','mobile.css','favicon.ico','site.webmanifest')){Copy-Item -LiteralPath (Join-Path $siteRoot $webFile) -Destination $webRoot}
+  foreach($webImage in @('logo.png','icon-192.png','icon-512.png','apple-touch-icon.png')){Copy-Item -LiteralPath (Join-Path $siteRoot ('assets\'+$webImage)) -Destination (Join-Path $webRoot 'assets')}
   Invoke-Checked (Join-Path $toolsRoot 'aapt2.exe') @('compile','--dir',(Join-Path $buildRoot 'res'),'-o',$compiled)
   $generated=Join-Path $buildRoot 'generated';$classes=Join-Path $buildRoot 'classes';$dex=Join-Path $buildRoot 'dex'
   New-Item -ItemType Directory -Force -Path $generated,$classes,$dex | Out-Null
   $unsigned=Join-Path $buildRoot 'unsigned.apk'
-  Invoke-Checked (Join-Path $toolsRoot 'aapt2.exe') @('link','-o',$unsigned,'--manifest',(Join-Path $buildRoot 'AndroidManifest.xml'),'-I',$platformJar,'--java',$generated,$compiled)
+  Invoke-Checked (Join-Path $toolsRoot 'aapt2.exe') @('link','-o',$unsigned,'--manifest',(Join-Path $buildRoot 'AndroidManifest.xml'),'-I',$platformJar,'--java',$generated,'-A',(Join-Path $buildRoot 'assets'),$compiled)
   $sourceFiles=@(Get-ChildItem -LiteralPath (Join-Path $projectRoot 'src'),$generated -Recurse -Filter '*.java' | ForEach-Object FullName)
   Invoke-Checked (Join-Path $JavaRoot 'bin\javac.exe') (@('-encoding','UTF-8','-source','8','-target','8','-classpath',$platformJar,'-d',$classes)+$sourceFiles)
   $classJar=Join-Path $buildRoot 'classes.jar'
@@ -44,7 +49,18 @@ try{
   Invoke-Checked (Join-Path $JavaRoot 'bin\java.exe') @('-cp',(Join-Path $toolsRoot 'lib\d8.jar'),'com.android.tools.r8.D8','--release','--min-api','26','--lib',$platformJar,'--output',$dex,$classJar)
   Add-Type -AssemblyName System.IO.Compression.FileSystem
   $archive=[IO.Compression.ZipFile]::Open($unsigned,[IO.Compression.ZipArchiveMode]::Update)
-  try{[IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive,(Join-Path $dex 'classes.dex'),'classes.dex') | Out-Null}finally{$archive.Dispose()}
+  try{
+    # Windows aapt2 may put backslashes in nested asset entry names. Android requires '/'.
+    foreach($entry in @($archive.Entries)){
+      if($entry.FullName.Contains('\')){
+        $normalized=$archive.CreateEntry($entry.FullName.Replace('\','/'),[IO.Compression.CompressionLevel]::Optimal)
+        $inputStream=$entry.Open();$outputStream=$normalized.Open()
+        try{$inputStream.CopyTo($outputStream)}finally{$outputStream.Dispose();$inputStream.Dispose()}
+        $entry.Delete()
+      }
+    }
+    [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive,(Join-Path $dex 'classes.dex'),'classes.dex') | Out-Null
+  }finally{$archive.Dispose()}
   $aligned=Join-Path $buildRoot 'aligned.apk'
   Invoke-Checked (Join-Path $toolsRoot 'zipalign.exe') @('-f','-p','4',$unsigned,$aligned)
   $appManifest=[xml](Get-Content -LiteralPath (Join-Path $projectRoot 'AndroidManifest.xml') -Raw)

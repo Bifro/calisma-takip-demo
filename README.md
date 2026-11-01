@@ -75,4 +75,6 @@ Telefon kilitliyken tarayıcı JavaScript çalışmasını durdurabilir. Kronome
 
 Android APK ve kilit ekranı bildirimi `android/` projesinde eklendi. Android `setUsesChronometer` ile süreyi kendisi günceller; bildirim eylemleri Başlat/Kaydet kontrolü sağlar. Kullanıcının bildirim ve kilit ekranı ayarları görünürlüğü ve etkileşimi etkiler. Statik web uygulaması/PWA, Android'in bu yerel bildirim özelliklerinin tamamını sunmaz. [APK indirme ve kurulum](https://bifro.github.io/calisma-takip-demo/downloads/) · [Android kaynakları ve eşitleme davranışı](android/README.md).
 
+2.0.0 ile aynı web arayüzünün tüm sekmeleri APK içine paketlenir. Android içinde genel düzenlemeler de yerel işlem kuyruğundan geçer; kilit ekranı ve uygulama tek telefon kaydını kullanır. Web tarafı mevcut Firestore yolunu kullanmayı sürdürür. Android'e özgü veri köprüsü normal tarayıcıda etkin değildir. APK arayüz dosyaları derleme sırasında bu deponun web dosyalarından kopyalanır; yeni tasarım için APK yeniden derlenir.
+
 Kaynaklar: [Android bildirim kronometresi ve eylemleri](https://developer.android.com/reference/android/app/Notification.Builder), [web service worker çalışma ömrü](https://chromium.googlesource.com/chromium/src/+/main/docs/security/service-worker-security-faq.md).

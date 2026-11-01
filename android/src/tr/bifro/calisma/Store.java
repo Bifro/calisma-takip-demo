@@ -20,6 +20,30 @@ public final class Store {
   public static synchronized boolean ready(Context c){try{return state(c).optBoolean("ready");}catch(Exception e){return false;}}
   public static synchronized String status(Context c){try{JSONObject s=state(c);String message=s.optString("error");return !message.isEmpty()?message:s.getJSONArray("ops").length()>0?"Telefonda kayıtlı · bulut bekliyor":s.optBoolean("ready")?"Senkron":"Bağlanıyor…";}catch(Exception e){return "Kayıt okunamadı";}}
   static synchronized void error(Context c,String message){try{JSONObject s=state(c);s.put("error",message);persist(c,s);}catch(Exception ignored){}}
+  static synchronized void conflict(Context c){try{JSONObject s=state(c);s.put("conflict",true);persist(c,s);}catch(Exception ignored){}}
+  static String version(JSONObject data) throws Exception {
+    byte[] hash=java.security.MessageDigest.getInstance("SHA-256").digest(data.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    return "phone-"+android.util.Base64.encodeToString(hash,android.util.Base64.NO_WRAP);
+  }
+  static synchronized JSONObject webRead(Context c) throws Exception {
+    JSONObject s=state(c);return new JSONObject().put("ok",true).put("ready",s.optBoolean("ready")).put("data",s.getJSONObject("data"))
+      .put("version",version(s.getJSONObject("data"))).put("pending",s.getJSONArray("ops").length()>0).put("conflict",s.optBoolean("conflict"))
+      .put("error",s.optString("error")).put("notifications",s.optBoolean("notifications",true)).put("selectedCourse",s.optString("selectedCourse"))
+      .put("selectedCount",s.optBoolean("selectedCount"));
+  }
+  static synchronized String webPatch(Context c,JSONObject after,String expected) throws Exception {
+    JSONObject s=state(c),before=s.getJSONObject("data");if(!s.optBoolean("ready"))throw new IllegalStateException("İlk kullanım için internet bağlantısı gerekiyor");
+    if(s.optBoolean("conflict")||!version(before).equals(expected))throw new WebEdits.Conflict();
+    JSONObject op=new JSONObject().put("kind","edit").put("before",TimerModel.copy(before)).put("after",after).put("opId",UUID.randomUUID().toString());
+    if(!WebEdits.apply(before,op).isEmpty()){s.getJSONArray("ops").put(op);s.remove("error");persist(c,s);}return version(before);
+  }
+  static synchronized void recover(Context c,JSONObject remote,String expected) throws Exception {
+    if(!version(data(c)).equals(expected))throw new WebEdits.Conflict();
+    JSONObject s=state(c),backup=new JSONObject(s.toString());JSONArray archives=s.optJSONArray("recoveryBackups");if(archives==null)archives=new JSONArray();
+    backup.remove("recoveryBackups");archives.put(new JSONObject().put("exportedAt",System.currentTimeMillis()).put("store",backup.getJSONObject("data")).put("operations",backup.getJSONArray("ops")));
+    s.put("recoveryBackups",archives).put("data",remote).put("ops",new JSONArray()).put("ready",true);s.remove("error");s.remove("conflict");persist(c,s);
+  }
+  static synchronized JSONArray backups(Context c) throws Exception {JSONArray a=state(c).optJSONArray("recoveryBackups");return a!=null?a:new JSONArray();}
   static synchronized void acceptRemote(Context c,JSONObject remote) throws Exception {
     JSONObject s=state(c);if(s.getJSONArray("ops").length()==0){s.put("data",remote);s.put("ready",true);s.remove("error");persist(c,s);}
   }
@@ -32,7 +56,7 @@ public final class Store {
     }
     JSONObject displayed=TimerModel.copy(remote);
     for(int i=0;i<remaining.length();i++)TimerModel.apply(displayed,remaining.getJSONObject(i),true);
-    s.put("ops",remaining);s.put("data",displayed);s.put("ready",true);s.remove("error");persist(c,s);
+    s.put("ops",remaining);s.put("data",displayed);s.put("ready",true);s.remove("error");s.remove("conflict");persist(c,s);
   }
   public static synchronized void start(Context c,String course,boolean count) throws Exception {
     JSONObject s=state(c),data=s.getJSONObject("data");if(!s.optBoolean("ready"))throw new IllegalStateException("İlk kullanım için internet bağlantısı gerekiyor");

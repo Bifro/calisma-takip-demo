@@ -232,8 +232,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
           <button class="btn-start" id="btnStart" onclick="startTimer()">▶ Başlat</button>
           <button class="btn-stop" id="btnStop" onclick="stopTimer()" disabled>■ Kaydet</button>
         </div>
-        <label class="plan-timer-label"><input type="checkbox" id="countPlanSession"/> Bu çalışmayı tamamlanan seans olarak say</label>
-        <label class="plan-timer-course">Ders<select class="plan-select" id="timerCourse"></select></label>
+        <label class="plan-timer-label"><input type="checkbox" id="countPlanSession" onchange="syncNativeSelection()"/> Bu çalışmayı tamamlanan seans olarak say</label>
+        <label class="plan-timer-course">Ders<select class="plan-select" id="timerCourse" onchange="syncNativeSelection()"></select></label>
         <div class="today-info" id="todayInfo"></div>
       </div>
       <div id="planToday"></div>
@@ -333,7 +333,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
   </div>
 </div>
 
-<script src="plan.js?v=20261101-1"></script>
+<script src="plan.js?v=20261101-2"></script>
 <script>
 // store.dayTasks:   { "2025-04-21": [{text,done},...] }
 // store.weekTasks:  { "2025-04-14": [{text,done},...] }  key=monday
@@ -357,6 +357,25 @@ var FS_URL='https://firestore.googleapis.com/v1/projects/'+PROJECT_ID+'/database
 var syncBusy=null, editRevision=0, pendingSync=false, cloudVersion=null, syncConflict=false;
 var syncReady=false, syncReadFailed=false;
 var cloudBase=null;
+var nativeCloudPending=false,nativeCloudConflict=false,nativeInfo=null;
+function nativeApp(){return typeof StudyAndroid!=='undefined'?StudyAndroid:null;}
+function readNativeInfo(){
+  var info=JSON.parse(nativeApp().read());if(!info.ok||!info.ready)throw new Error(info.error||'İlk bağlantı bekleniyor');
+  nativeInfo=info;nativeCloudPending=!!info.pending||!!info.error;nativeCloudConflict=!!info.conflict;return info;
+}
+function syncNativeSelection(){if(nativeApp())nativeApp().selection(document.getElementById('timerCourse').value,document.getElementById('countPlanSession').checked);}
+async function nativeTimerAction(begin){
+  if(pendingSync)await flushSync();if(pendingSync||syncConflict)return;
+  try{var result=JSON.parse(nativeApp().timer(begin,document.getElementById('timerCourse').value,document.getElementById('countPlanSession').checked));
+    if(!result.ok)throw new Error(result.error);await refreshCloud();restoreTimer();renderAll();
+  }catch(e){document.getElementById('syncNotice').hidden=false;document.getElementById('syncNotice').textContent=e.message;}
+}
+function onNativeUpdate(){
+  if(syncBusy)return;
+  if(nativeApp())try{readNativeInfo();}catch(e){}
+  if(!syncConflict)refreshCloud();else setSyncState('err');
+  var button=document.getElementById('nativeNotifications');if(button&&nativeApp())button.textContent=nativeApp().notifications()==='true'?'Kilit ekranı bildirimini kapat':'Kilit ekranı bildirimini aç';
+}
 var STORE_FIELDS=['sessions','tasks','dayTasks','weekTasks','dayGoals','runningStart','runningPlan','runningCourse','studyPlan'];
 function syncClone(value){return JSON.parse(JSON.stringify(value));}
 function syncEqual(a,b){
@@ -393,6 +412,9 @@ function reconcileCloud(remote){
   syncConflict=false;return true;
 }
 async function cloudRead(){
+  if(nativeApp()){
+    var info=readNativeInfo();return {data:info.data,version:info.version};
+  }
   var r=await fetch(FS_URL,{signal:AbortSignal.timeout(10000)});
   if(!r.ok)throw new Error('Firestore '+r.status);
   var d=await r.json();
@@ -405,6 +427,11 @@ async function cloudRead(){
   return {data:data,version:d.updateTime};
 }
 async function fsPatch(data,version){
+  if(nativeApp()){
+    var reply=JSON.parse(nativeApp().patch(JSON.stringify(data),version));
+    if(!reply.ok){if(reply.conflict)syncConflict=true;throw new Error(reply.error||'Telefon kaydı yapılamadı');}
+    nativeCloudPending=true;return reply.version;
+  }
   var fields={};
   STORE_FIELDS.forEach(function(k){fields[k]={stringValue:JSON.stringify(data[k])};});
   var query=STORE_FIELDS.map(function(k){return 'updateMask.fieldPaths='+encodeURIComponent(k)}).join('&');
@@ -426,6 +453,8 @@ function lcSave(){
 }
 function lcLoad(){try{return JSON.parse(localStorage.getItem('ct_v5')||'null');}catch(e){return null;}}
 function setSyncState(st){
+  if(nativeApp()&&nativeCloudConflict)syncConflict=true;
+  if(st==='ok'&&nativeApp()&&nativeCloudPending)st='err';
   var b=document.getElementById('syncBadge'),t=document.getElementById('syncText');
   b.className='sync-badge '+st;
   t.textContent=syncConflict?'kayıt çakışması':st==='ok'?'senkron':st==='syncing'?'kaydediliyor':'cihazda · bulut bekliyor';
@@ -544,6 +573,7 @@ function weekGoalHours(wk){return weekGoalSecs(wk)/3600;}
 // ── Timer ──
 function currentElapsed(){return(!running||!startMs)?0:Math.floor((Date.now()-startMs)/1000)}
 async function startTimer(){
+  if(nativeApp())return nativeTimerAction(true);
   if(running)return; running=true; startMs=Date.now(); store.runningStart=startMs;
   store.runningPlan=!!store.studyPlan&&document.getElementById('countPlanSession').checked;
   store.runningCourse=document.getElementById('timerCourse').value||null;
@@ -561,6 +591,7 @@ function tick(){
   window.laserPurple=(el>=3000);
 }
 async function stopTimer(){
+  if(nativeApp())return nativeTimerAction(false);
   if(!running)return;
   var requestedStart=startMs,requestedEnd=Date.now();
   await refreshCloud();
@@ -898,10 +929,14 @@ function restoreTimer(){
 (async function(){
   var now=new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
   await loadStore();restoreTimer();
-  if(!syncConflict&&initializeStudyPlan()){normalizeStore();syncToCloud();}
+  if(syncReady&&!syncConflict&&initializeStudyPlan()){normalizeStore();syncToCloud();}
   renderAll();
   document.getElementById('loadingOverlay').classList.add('hidden');
   document.getElementById('loadingOverlay').setAttribute('aria-hidden','true');
+  if(nativeApp()){
+    if(nativeInfo&&!running){document.getElementById('countPlanSession').checked=!!nativeInfo.selectedCount;if(nativeInfo.selectedCourse)document.getElementById('timerCourse').value=nativeInfo.selectedCourse;}
+    syncNativeSelection();
+  }
   setInterval(refreshCloud,30000);
   // Browser timers may pause while the phone is locked. Recompute from startMs on return.
   function resumeView(){if(!document.hidden){if(running)tick();renderTimerTab();refreshCloud();}}

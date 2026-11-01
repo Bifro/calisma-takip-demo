@@ -86,6 +86,7 @@ function renderStudyPlan(){
     +'<form class="plan-form" onsubmit="savePlanDay(event)"><label>Gün<input type="date" id="planDay" value="'+today+'" onchange="updateDayTypeForm()" required/></label><label>Gün türü<select id="planDayType">'
     +Object.keys(DAY_TYPES).map(function(type){return '<option value="'+type+'"'+(dayType(today)===type?' selected':'')+'>'+DAY_TYPES[type].name+'</option>';}).join('')
     +'</select></label><button type="submit">Hedefi uygula</button></form><p id="dayTypeResult" class="plan-muted" role="status"></p></div>'
+    +(nativeApp()?'<div class="plan-card"><h2>Telefon bildirimleri</h2><p class="plan-muted">Kilit ekranındaki kronometre, uygulama ve web ile aynı kayıtları kullanır.</p><div class="plan-actions"><button id="nativeNotifications" type="button" onclick="nativeApp().toggleNotifications()">'+(nativeApp().notifications()==='true'?'Kilit ekranı bildirimini kapat':'Kilit ekranı bildirimini aç')+'</button></div></div>':'')
     +'<div class="plan-card"><h2>Kayıtlar ve yedek</h2><p class="plan-muted">27 ve 28 Ekim için bildirilen toplamlar: günde 2 saat. Var olan seansların üzerine yalnızca eksik süre eklenir. Saat kayıtları pediatri seans hedefine kendiliğinden sayılmaz.</p>'
     +'<div class="plan-actions"><button type="button" onclick="downloadBackup()">Yedek indir</button><button type="button" class="secondary" onclick="refreshCloud()">Senkronu dene</button>'
     +(syncConflict?'<button type="button" class="secondary" onclick="useCloudCopy()">Bu cihazı yedekle ve güncel kayıtları yükle</button>':'')
@@ -116,13 +117,18 @@ async function removePlanProgress(id){
   document.activeElement.blur();renderAll();await syncToCloud();
 }
 function downloadBackup(){
+  if(nativeApp()){nativeApp().exportFile(JSON.stringify({format:'calisma-takip-backup',version:1,exportedAt:new Date().toISOString(),store:store},null,2),'calisma-takip-'+todayStr()+'.json');return;}
   var blob=new Blob([JSON.stringify({format:'calisma-takip-backup',version:1,exportedAt:new Date().toISOString(),store:store},null,2)],{type:'application/json'});
   var url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='calisma-takip-'+todayStr()+'.json';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
 }
 async function useCloudCopy(){
   if(syncBusy)return;
   var revision=editRevision;
-  try{var remote=await cloudRead();if(syncBusy||revision!==editRevision)return;
+  try{var remote;
+    if(nativeApp()){
+      var recovered=JSON.parse(nativeApp().recover());if(!recovered.ok)throw new Error(recovered.error);
+      nativeCloudConflict=false;nativeCloudPending=false;remote={data:recovered.data,version:recovered.version};
+    }else remote=await cloudRead();if(syncBusy||revision!==editRevision)return;
     var backups=JSON.parse(localStorage.getItem('ct_conflict_backups_v1')||'[]');
     backups.push({format:'calisma-takip-backup',version:1,exportedAt:new Date().toISOString(),store:syncClone(store),cloudVersion:cloudVersion,pending:pendingSync});
     // If storage is full, abort before replacing the pending local copy.
@@ -135,7 +141,9 @@ async function useCloudCopy(){
 }
 function downloadRecoveryBackup(){
   var backups=JSON.parse(localStorage.getItem('ct_conflict_backups_v1')||'[]');
+  if(nativeApp())backups=backups.concat(JSON.parse(nativeApp().backups()));
   if(!backups.length){document.getElementById('recoveryStatus').textContent='Henüz saklanmış bir cihaz yedeği yok.';return;}
+  if(nativeApp()){nativeApp().exportFile(JSON.stringify({format:'calisma-takip-recovery',version:1,backups:backups},null,2),'calisma-takip-cihaz-yedekleri-'+todayStr()+'.json');return;}
   var blob=new Blob([JSON.stringify({format:'calisma-takip-recovery',version:1,backups:backups},null,2)],{type:'application/json'});
   var url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='calisma-takip-cihaz-yedekleri-'+todayStr()+'.json';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
 }

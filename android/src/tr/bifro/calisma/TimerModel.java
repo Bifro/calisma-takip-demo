@@ -25,6 +25,7 @@ public final class TimerModel {
     for(int i=0;i<ops.length();i++){JSONObject op=ops.optJSONObject(i);if(op!=null&&op.optString("kind").equals("stop")&&op.optLong("start")==start)return true;}return false;
   }
   public static Set<String> apply(JSONObject data,JSONObject op,boolean completedLocally) throws Exception {
+    if(op.optString("kind").equals("edit"))return WebEdits.apply(data,op);
     Set<String> changed=new LinkedHashSet<>();long start=op.getLong("start");String kind=op.getString("kind");
     if(kind.equals("start")){
       if(recorded(data,start))return changed;
