@@ -12,10 +12,11 @@ return new Response(JSON.stringify({fields,updateTime:'preview-'+version}),{stat
 </script>`;
 http.createServer((req,res)=>{
   const pathname=new URL(req.url,'http://localhost').pathname;
-  const files={'/':'index.html','/index.html':'index.html','/plan.js':'plan.js','/plan.css':'plan.css','/mobile.css':'mobile.css'};
+  const files={'/':'index.html','/index.html':'index.html','/plan.js':'plan.js','/plan.css':'plan.css','/mobile.css':'mobile.css','/favicon.ico':'favicon.ico','/site.webmanifest':'site.webmanifest','/assets/logo.png':'assets/logo.png','/assets/icon-192.png':'assets/icon-192.png','/assets/icon-512.png':'assets/icon-512.png','/assets/apple-touch-icon.png':'assets/apple-touch-icon.png'};
   const file=files[pathname];if(!file){res.writeHead(404);return res.end();}
-  let content=fs.readFileSync(path.join(__dirname,file),'utf8');
+  const binary=/\.(png|ico)$/.test(file);
+  let content=fs.readFileSync(path.join(__dirname,file),binary?undefined:'utf8');
   if(file==='index.html')content=content.replace('<head>','<head>'+fixture);
-  res.setHeader('Content-Type',file.endsWith('.css')?'text/css':file.endsWith('.js')?'text/javascript':'text/html; charset=utf-8');
+  res.setHeader('Content-Type',file.endsWith('.png')?'image/png':file.endsWith('.ico')?'image/x-icon':file.endsWith('.webmanifest')?'application/manifest+json':file.endsWith('.css')?'text/css':file.endsWith('.js')?'text/javascript':'text/html; charset=utf-8');
   res.end(content);
 }).listen(8765,'127.0.0.1',()=>console.log('Local preview: http://127.0.0.1:8765 (isolated data)'));

@@ -4,7 +4,7 @@ Android 8+ için küçük, yerel Java uygulaması. Android 16 (API 36.1) emülat
 
 ## Kurulum
 
-1. Telefonda [APK’yı indir](https://bifro.github.io/calisma-takip-demo/downloads/calisma-takip-1.1.0.apk) ve Android'in paket yükleyicisiyle mevcut kurulumun üzerine güncelle.
+1. Telefonda [APK’yı indir](https://bifro.github.io/calisma-takip-demo/downloads/calisma-takip-1.1.1.apk) ve Android'in paket yükleyicisiyle mevcut kurulumun üzerine güncelle.
 2. Gerekirse kullandığın tarayıcı/dosya uygulaması için bu APK'yı yükleme iznini Android ayarlarından ver.
 3. Uygulamayı ilk kez internet açıkken başlat. Mevcut Firebase planı ve kronometre yüklenir.
 4. **Kilit ekranı bildirimini aç** düğmesine dokun ve bildirim iznini ver. Telefonun kilit ekranı ayarlarında bu uygulamanın bildirimlerinin gösterilmesine izin ver.
@@ -12,6 +12,8 @@ Android 8+ için küçük, yerel Java uygulaması. Android 16 (API 36.1) emülat
 6. Mevcut web sayfalarını bir kez yenile; Android ile ortak kronometreyi takip eden güncel kodu yüklesinler.
 
 1.1.0 sürümünde RemoteViews ile özel bildirim içerikleri eklendi: 48 dp kapalı görünümde sayaç ve aktif işlem düğmesi, 148 dp geniş görünümde tarih/sayaç/iki düğme. İç kart web ile aynı koyu (#1a1a1a), açık sayaç (#f0f0f0), yeşil (#1D9E75) ve turuncu (#D85A30) renkleri kullanır. Android ve üretici arayüzü bildirimin dış çerçevesini ve uygulama başlığını çizmeye devam eder; tüm bildirim alanının HTML kartı gibi görünmesi garanti edilmez. Canlı sayaç Android Chronometer bileşenidir; süre biçimi Android tarafından belirlenir. Ekran kilitliyken JavaScript'e veya saniyelik ağ isteklerine ihtiyaç duymaz. Gösterilen ders ve seans sayımı, çalışmayı başlatmadan önce uygulamada seçilir.
+
+1.1.1 sürümünde gönderilen logo Android uygulama simgesi olarak eklendi. Farklı simge şekilleri için uyarlanabilir simge katmanları kullanılır. Web başlığı, tarayıcı sekmesi ve ana ekran kısayolu da aynı görseli kullanır.
 
 ## Ortak kayıt ve eşitleme
 
@@ -32,7 +34,7 @@ Harici bağımlılık veya paket kurulumu yoktur. Android SDK 36.1, Build Tools 
 .\build.ps1 -SdkRoot 'C:\Users\fberk\AppData\Local\Android\Sdk' -WithTests
 ```
 
-`aapt2`, `javac`, D8, zipalign ve apksigner çalıştırılır. Türkçe klasör adlarıyla Android araçlarının uyumu için derleme ASCII isimli geçici klasörde yapılır; `-WorkRoot` ile yer seçilebilir. Son dosya `dist/calisma-takip-1.1.0.apk` olur; dosya sürümü manifestten alınır.
+`aapt2`, `javac`, D8, zipalign ve apksigner çalıştırılır. Türkçe klasör adlarıyla Android araçlarının uyumu için derleme ASCII isimli geçici klasörde yapılır; `-WorkRoot` ile yer seçilebilir. Son dosya `dist/calisma-takip-1.1.1.apk` olur; dosya sürümü manifestten alınır.
 
 Bu bir kişisel kurulum APK'sıdır; mağaza yayını yapılmamıştır. Sürüm güncellemeleri için aynı imza gerekir. Özel anahtar ve parolası `.signing/` altında yalnızca yerelde saklanır, GitHub'a yüklenmez. Bu klasör güvenli biçimde yedeklenmelidir. Test APK'sı kullanıcıya dağıtılmaz.
 
@@ -41,7 +43,7 @@ Bu bir kişisel kurulum APK'sıdır; mağaza yayını yapılmamıştır. Sürüm
 `tests/TimerInstrumentation.java`, ayrı bir Android 16 emülatöründe sahte bir bellek veritabanı ve ayrı test tercihleri kullanır. Canlı Firestore'a yalnızca okuma kontrolü yapılır; üretim belgesine test kaydı yazılmaz. Kontroller: JSON veri uyumu, gece yarısı bölünmesi, tekrar kaydetme, başka cihazdaki yeni sayaç, kalıcı çevrimdışı kuyruk, koşullu yazma çakışması, web/APK çift kayıt önleme, kartın çizimi, sistem kronometreli bildirim ve bildirimdeki Kaydet eylemi.
 
 ```text
-adb -s emulator-5580 install -r dist/calisma-takip-1.1.0.apk
+adb -s emulator-5580 install -r dist/calisma-takip-1.1.1.apk
 adb -s emulator-5580 install -r dist/timer-tests.apk
 adb -s emulator-5580 shell am instrument -w tr.bifro.calisma.tests/tr.bifro.calisma.TimerInstrumentation
 ```

@@ -8,6 +8,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="theme-color" content="#0f0f0f"/>
 <title>Çalışma Takip</title>
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48"/>
+<link rel="icon" type="image/png" href="assets/icon-192.png" sizes="192x192"/>
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png"/>
+<link rel="manifest" href="site.webmanifest"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
@@ -26,6 +30,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .app{display:flex;flex-direction:column;min-height:100dvh;max-width:480px;margin:0 auto;position:relative;z-index:1}
 .header{padding:1.25rem 1.25rem 0;display:flex;align-items:center;justify-content:space-between}
 .header-title{font-size:13px;font-weight:500;color:var(--text2);letter-spacing:.5px;text-transform:uppercase}
+.header-brand{display:flex;align-items:center;gap:8px;min-width:0}
+.header-logo{width:32px;height:32px;flex-shrink:0;object-fit:contain}
 .header-right{display:flex;align-items:center;gap:10px}
 .sync-badge{font-size:10px;font-weight:500;padding:3px 8px;border-radius:99px;border:1px solid var(--border2);color:var(--text3);display:flex;align-items:center;gap:4px;transition:all .3s}
 .sync-badge.ok{color:var(--green);border-color:var(--green-dim)}
@@ -201,7 +207,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 
 <div class="app">
   <div class="header">
-    <span class="header-title">Çalışma Takip</span>
+    <div class="header-brand"><img class="header-logo" src="assets/logo.png" width="32" height="32" alt=""/><span class="header-title">Çalışma Takip</span></div>
     <div class="header-right">
       <div class="sync-badge" id="syncBadge"><div class="sync-dot"></div><span id="syncText">bağlanıyor</span></div>
       <div class="header-dot" id="headerDot"></div>
@@ -350,7 +356,42 @@ var FS_URL='https://firestore.googleapis.com/v1/projects/'+PROJECT_ID+'/database
 // Pending local edits are retained on failure; a competing device cannot silently overwrite them.
 var syncBusy=null, editRevision=0, pendingSync=false, cloudVersion=null, syncConflict=false;
 var syncReady=false, syncReadFailed=false;
+var cloudBase=null;
 var STORE_FIELDS=['sessions','tasks','dayTasks','weekTasks','dayGoals','runningStart','runningPlan','runningCourse','studyPlan'];
+function syncClone(value){return JSON.parse(JSON.stringify(value));}
+function syncEqual(a,b){
+  if(a===b)return true;
+  if(!a||!b||typeof a!=='object'||typeof b!=='object')return false;
+  if(Array.isArray(a)!==Array.isArray(b))return false;
+  var keys=Object.keys(a);return keys.length===Object.keys(b).length&&keys.every(function(k){return Object.prototype.hasOwnProperty.call(b,k)&&syncEqual(a[k],b[k]);});
+}
+// Only reconcile independently changed values. Ambiguous edits keep both copies intact.
+function mergeSyncValue(base,local,remote){
+  if(syncEqual(local,base)||syncEqual(local,remote))return {ok:true,value:remote};
+  if(syncEqual(remote,base))return {ok:true,value:local};
+  if(base&&local&&remote&&typeof base==='object'&&typeof local==='object'&&typeof remote==='object'
+    &&!Array.isArray(base)&&!Array.isArray(local)&&!Array.isArray(remote)){
+    var result={},keys=Array.from(new Set(Object.keys(base).concat(Object.keys(local),Object.keys(remote))));
+    for(var key of keys){var part=mergeSyncValue(base[key],local[key],remote[key]);if(!part.ok)return {ok:false};if(part.value!==undefined)result[key]=part.value;}
+    return {ok:true,value:result};
+  }
+  return {ok:false};
+}
+function reconcileCloud(remote){
+  if(!cloudBase)return false;
+  var merged={},timerKeys=['runningStart','runningPlan','runningCourse'];
+  var timer=function(data){return timerKeys.map(function(k){return data[k];});};
+  var timerResult=mergeSyncValue(timer(cloudBase),timer(store),timer(remote.data));
+  if(!timerResult.ok)return false;
+  for(var key of STORE_FIELDS){
+    if(timerKeys.includes(key))continue;
+    var part=mergeSyncValue(cloudBase[key],store[key],remote.data[key]);if(!part.ok)return false;merged[key]=part.value;
+  }
+  timerKeys.forEach(function(k,i){merged[k]=timerResult.value[i];});
+  store=syncClone(merged);normalizeStore();cloudVersion=remote.version;cloudBase=syncClone(remote.data);
+  pendingSync=!STORE_FIELDS.every(function(k){return syncEqual(store[k],remote.data[k]);});
+  syncConflict=false;return true;
+}
 async function cloudRead(){
   var r=await fetch(FS_URL,{signal:AbortSignal.timeout(10000)});
   if(!r.ok)throw new Error('Firestore '+r.status);
@@ -380,7 +421,7 @@ async function fsPatch(data,version){
 }
 function lcSave(){
   try{localStorage.setItem('ct_v5',JSON.stringify(store));
-    localStorage.setItem('ct_sync_v1',JSON.stringify({pending:pendingSync,version:cloudVersion}));
+    localStorage.setItem('ct_sync_v1',JSON.stringify({pending:pendingSync,version:cloudVersion,base:cloudBase}));
   }catch(e){document.getElementById('syncText').textContent='cihazda kayıt başarısız';}
 }
 function lcLoad(){try{return JSON.parse(localStorage.getItem('ct_v5')||'null');}catch(e){return null;}}
@@ -390,8 +431,9 @@ function setSyncState(st){
   t.textContent=syncConflict?'kayıt çakışması':st==='ok'?'senkron':st==='syncing'?'kaydediliyor':'cihazda · bulut bekliyor';
   var notice=document.getElementById('syncNotice');
   if(notice){notice.hidden=st==='ok'||st==='syncing';notice.textContent=syncConflict?
-    'Başka bir cihazda değişiklik var. Bu cihazdaki kayıtlar korundu. Yedek indirip sayfayı yenileyebilir veya bulut kaydını yükleyebilirsin.':
-    'Buluta ulaşılamadı. Değişiklikler bu cihazda bekliyor; bağlantı gelince yeniden denenecek.';}
+    'Bu tarayıcıda bekleyen değişiklikler var; başka cihazdaki güncel kayıtlar henüz gösterilmiyor. Güncel kayıtları yüklemeden önce bu cihazın kopyası yedeklenecek.':
+    'Buluta ulaşılamadı. Değişiklikler bu cihazda bekliyor; bağlantı gelince yeniden denenecek.';
+    if(syncConflict)notice.innerHTML+='<div class="plan-actions"><button type="button" onclick="useCloudCopy()">Bu cihazı yedekle ve güncel kayıtları yükle</button><button type="button" onclick="downloadBackup()">Mevcut kayıtları indir</button></div>';}
 }
 function normalizeStore(){
   store.sessions=store.sessions||[];
@@ -411,14 +453,15 @@ async function loadStore(){
   if(cached){store=cached;normalizeStore();}
   try{
     var meta=JSON.parse(localStorage.getItem('ct_sync_v1')||'null');
-    if(meta){pendingSync=!!meta.pending;cloudVersion=meta.version||null;}
+    if(meta){pendingSync=!!meta.pending;cloudVersion=meta.version||null;cloudBase=meta.base||null;}
   }catch(e){}
   setSyncState('syncing');
   try{
     var remote=await cloudRead();
     if(pendingSync){
-      if(!cloudVersion||cloudVersion!==remote.version)syncConflict=true;
-    }else{store=remote.data;cloudVersion=remote.version;normalizeStore();}
+      if(!cloudVersion||cloudVersion!==remote.version){if(!reconcileCloud(remote))syncConflict=true;}
+      else if(!cloudBase)cloudBase=syncClone(remote.data);
+    }else{store=remote.data;cloudVersion=remote.version;cloudBase=syncClone(remote.data);normalizeStore();}
     syncReady=true;lcSave();
     if(pendingSync&&!syncConflict)await flushSync();else setSyncState(syncConflict?'err':'ok');
   }catch(e){syncReadFailed=true;setSyncState('err');}
@@ -431,12 +474,19 @@ async function flushSync(){
       setSyncState('syncing');
       if(!syncReady||syncReadFailed){
         var remote=await cloudRead();
-        if(!cloudVersion||remote.version!==cloudVersion){syncConflict=true;throw new Error('Çakışma');}
+        if(!cloudVersion||remote.version!==cloudVersion){if(!reconcileCloud(remote)){syncConflict=true;throw new Error('Çakışma');}restoreTimer();renderAll();}
+        else if(!cloudBase)cloudBase=syncClone(remote.data);
         syncReady=true;syncReadFailed=false;
       }
+      var retries=0;
       while(pendingSync){
         var revision=editRevision,snapshot=JSON.parse(JSON.stringify(store));
-        cloudVersion=await fsPatch(snapshot,cloudVersion);
+        try{cloudVersion=await fsPatch(snapshot,cloudVersion);}catch(error){
+          if(!syncConflict||!cloudBase||retries++>=2)throw error;
+          var latest=await cloudRead();if(!reconcileCloud(latest))throw error;
+          lcSave();restoreTimer();renderAll();continue;
+        }
+        cloudBase=syncClone(snapshot);
         if(revision===editRevision)pendingSync=false;
         lcSave();
       }
@@ -459,7 +509,7 @@ async function refreshCloud(){
     if(revision!==editRevision||pendingSync||syncBusy)return;
     // Android may start/stop the same shared timer while this page stays open.
     var timerChanged=store.runningStart!==remote.data.runningStart||store.runningPlan!==remote.data.runningPlan||store.runningCourse!==remote.data.runningCourse;
-    store=remote.data;cloudVersion=remote.version;normalizeStore();
+    store=remote.data;cloudVersion=remote.version;cloudBase=syncClone(remote.data);normalizeStore();
     if(timerChanged)restoreTimer();renderAll();lcSave();
     syncReadFailed=false;syncReady=true;setSyncState('ok');
   }catch(e){syncReadFailed=true;setSyncState('err');}

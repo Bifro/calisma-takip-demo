@@ -99,3 +99,53 @@ test('web save recognizes a native save before adding another copy',async()=>{
   c.fetch=async()=>({ok:true,json:async()=>({fields,updateTime:'native-save'})});
   await c.stopTimer();assert.equal(c.running,false);assert.equal(c.store.sessions.length,3);assert.equal(c.pendingSync,false);
 });
+function cloudResponse(data,version){
+  const fields=Object.fromEntries(Object.entries(data).map(([k,v])=>[k,{stringValue:JSON.stringify(v)}]));
+  return {ok:true,json:async()=>({fields,updateTime:version})};
+}
+test('returning browser with a stale pending flag adopts newer native records without writing',async()=>{
+  const {c,storage}=harness();c.initializeStudyPlan();const base=JSON.parse(JSON.stringify(c.store));
+  const remote=JSON.parse(JSON.stringify(base));remote.sessions.push({id:'native-new',date:'2026-11-01',duration:1800});
+  storage.set('ct_v5',JSON.stringify(base));storage.set('ct_sync_v1',JSON.stringify({pending:true,version:'v1',base}));
+  let writes=0;c.fetch=async(u,o)=>{if(o&&o.method==='PATCH')writes++;return cloudResponse(remote,'v2');};
+  await c.loadStore();assert.equal(c.syncConflict,false);assert.equal(c.pendingSync,false);assert.equal(writes,0);
+  assert.equal(c.store.sessions.at(-1).id,'native-new');
+});
+test('independent day-goal and native-session changes reconcile using the current cloud version',async()=>{
+  const {c,storage}=harness();c.initializeStudyPlan();const base=JSON.parse(JSON.stringify(c.store));
+  c.store.dayGoals['2026-11-01']=3;const remote=JSON.parse(JSON.stringify(base));
+  remote.sessions.push({id:'native-new',date:'2026-11-01',duration:1800});
+  storage.set('ct_v5',JSON.stringify(c.store));storage.set('ct_sync_v1',JSON.stringify({pending:true,version:'v1',base}));
+  let saved;c.fetch=async(u,o)=>{if(o&&o.method==='PATCH'){saved=JSON.parse(o.body);assert.match(u,/updateTime=v2/);return {ok:true,json:async()=>({updateTime:'v3'})};}return cloudResponse(remote,'v2');};
+  await c.loadStore();assert.equal(c.syncConflict,false);assert.equal(c.pendingSync,false);
+  assert.equal(JSON.parse(saved.fields.sessions.stringValue).at(-1).id,'native-new');
+  assert.equal(JSON.parse(saved.fields.dayGoals.stringValue)['2026-11-01'],3);
+});
+test('real overlapping edits are retained and show recovery directly in the notice',async()=>{
+  const {c,storage,element}=harness();c.initializeStudyPlan();const base=JSON.parse(JSON.stringify(c.store));
+  c.store.dayGoals['2026-11-01']=3;const remote=JSON.parse(JSON.stringify(base));remote.dayGoals['2026-11-01']=5;
+  storage.set('ct_v5',JSON.stringify(c.store));storage.set('ct_sync_v1',JSON.stringify({pending:true,version:'v1',base}));
+  c.fetch=async()=>cloudResponse(remote,'v2');await c.loadStore();assert.equal(c.syncConflict,true);
+  assert.equal(c.store.dayGoals['2026-11-01'],3);assert.match(element('syncNotice').innerHTML,/useCloudCopy/);
+});
+test('legacy conflict recovery archives all pending local work before showing current cloud data',async()=>{
+  const {c,storage}=harness();c.initializeStudyPlan();c.store.tasks.daily.push({id:'local',text:'preserve me'});
+  const remote=JSON.parse(JSON.stringify(c.store));remote.tasks.daily=[];remote.sessions.push({id:'latest',duration:60,date:'2026-11-01'});
+  c.pendingSync=true;c.syncConflict=true;c.cloudVersion='v1';c.fetch=async()=>cloudResponse(remote,'v2');
+  await c.useCloudCopy();assert.equal(c.syncConflict,false);assert.equal(c.pendingSync,false);assert.equal(c.syncReady,true);
+  assert.equal(c.store.sessions.at(-1).id,'latest');
+  const backups=JSON.parse(storage.get('ct_conflict_backups_v1'));assert.equal(backups[0].store.tasks.daily[0].text,'preserve me');
+  assert.equal(backups[0].pending,true);assert.equal(c.cloudVersion,'v2');
+});
+test('recovery refuses to replace pending work when the backup cannot be stored',async()=>{
+  const {c}=harness();c.initializeStudyPlan();c.store.tasks.daily.push({text:'local'});c.syncConflict=true;c.pendingSync=true;
+  const remote=JSON.parse(JSON.stringify(c.store));remote.tasks.daily=[];c.fetch=async()=>cloudResponse(remote,'v2');
+  const save=c.localStorage.setItem;c.localStorage.setItem=(k,v)=>{if(k==='ct_conflict_backups_v1')throw Error('quota');save(k,v);};
+  await c.useCloudCopy();assert.equal(c.store.tasks.daily[0].text,'local');assert.equal(c.syncConflict,true);assert.equal(c.pendingSync,true);
+});
+test('simultaneous timer edits do not mix the start time with another devices course',()=>{
+  const {c}=harness();c.initializeStudyPlan();c.cloudBase=JSON.parse(JSON.stringify(c.store));
+  c.store.runningStart=100;c.store.runningCourse='2026-10-27';
+  const remote=JSON.parse(JSON.stringify(c.cloudBase));remote.runningStart=200;remote.runningCourse='2026-11-10';
+  assert.equal(c.reconcileCloud({data:remote,version:'v2'}),false);assert.equal(c.store.runningStart,100);
+});

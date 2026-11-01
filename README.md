@@ -2,6 +2,12 @@
 
 GitHub Pages üzerinde çalışan, Firestore REST API ve cihazdaki localStorage ile kayıt tutan statik uygulama.
 
+## Logo
+
+Gönderilen özgün görsel `assets/logo-source.png` dosyasında saklanır. Web başlığı, sekme simgesi ve ana ekran kısayolları aynı görselden üretilir. `site.webmanifest`, site ana ekran kısayolunun adını ve simgelerini tanımlar; çevrimdışı çalışma eklemez.
+
+Android 1.1.1 aynı logoyu uyarlanabilir uygulama simgesi olarak kullanır. Bildirimin küçük durum simgesi Android'in tek renkli simge gereksinimi için ayrı tutulur. Simge dosyalarını yeniden üretmek için Python ve Pillow ile `python tools/generate-icons.py` çalıştırılır.
+
 ## Eklenen plan
 
 Mart 2027 TUS hedefi 65–70 puandır. Genel ders tarihleri kendiliğinden değiştirilmez:
@@ -34,7 +40,8 @@ Düzeltilen sorunlar:
 - Haftalık hedef hesabında tarih nesnesi yerine `YYYY-MM-DD` anahtarı kullanılır.
 - Başarısız bulut kaydı artık başarılı eşitleme olarak gösterilmez. Yerel değişiklikler bekletilir ve bağlantı gelince yeniden denenir.
 - Yazmalar sıraya alınır; eski bir arka plan okuması yeni düzenlemeyi silemez.
-- Firestore `currentDocument.updateTime` önkoşulu farklı cihazdaki düzenlemenin sessizce ezilmesini engeller. Çakışmada yerel kayıt korunur, otomatik yazma durur. Önce yedek indirilebilir, ardından kullanıcı isterse bulut kopyasını yükleyebilir. Otomatik birleştirme yapılmaz.
+- Firestore `currentDocument.updateTime` önkoşulu farklı cihazdaki düzenlemenin sessizce ezilmesini engeller. Son eşitlenen kopya cihazda saklanır; bağımsız alan değişiklikleri bu kopya üzerinden birleştirilir. Kronometrenin başlangıcı, ders ve seans seçimi birlikte değerlendirilir. Aynı alanın iki farklı düzenlemesi veya iki farklı seans listesi otomatik birleştirilmez.
+- Gerçek çakışmada uyarı üzerinde **Bu cihazı yedekle ve güncel kayıtları yükle** düğmesi bulunur. Bu işlem yerel kopyayı `ct_conflict_backups_v1` içinde saklamadan bulut kopyasına geçmez. Yedek saklanamazsa mevcut kopya korunur. Saklanan kopyalar Planım sekmesinden indirilebilir. Eski sürümden kalan ve eşitlenen başlangıç kopyası bulunmayan çakışmalar da bu yolla güvenle çözülebilir.
 - Alan maskesi, bu sürümün yönetmediği Firestore alanlarını korur.
 - Gece yarısını geçen seanslar ilgili günlere bölünür; tamamlanan seans bir kez sayılır. Böyle bir kaydın tüm süre parçaları silinirse ilişkili ilerleme de kaldırılır.
 

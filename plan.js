@@ -88,7 +88,8 @@ function renderStudyPlan(){
     +'</select></label><button type="submit">Hedefi uygula</button></form><p id="dayTypeResult" class="plan-muted" role="status"></p></div>'
     +'<div class="plan-card"><h2>Kayıtlar ve yedek</h2><p class="plan-muted">27 ve 28 Ekim için bildirilen toplamlar: günde 2 saat. Var olan seansların üzerine yalnızca eksik süre eklenir. Saat kayıtları pediatri seans hedefine kendiliğinden sayılmaz.</p>'
     +'<div class="plan-actions"><button type="button" onclick="downloadBackup()">Yedek indir</button><button type="button" class="secondary" onclick="refreshCloud()">Senkronu dene</button>'
-    +(syncConflict?'<button type="button" class="secondary" onclick="useCloudCopy()">Bulut kaydını yükle</button>':'')+'</div></div>';
+    +(syncConflict?'<button type="button" class="secondary" onclick="useCloudCopy()">Bu cihazı yedekle ve güncel kayıtları yükle</button>':'')
+    +'<button type="button" class="secondary" onclick="downloadRecoveryBackup()">Önceki cihaz yedeğini indir</button></div><p id="recoveryStatus" class="plan-muted" role="status"></p></div>';
 }
 function updateDayTypeForm(){document.getElementById('planDayType').value=dayType(document.getElementById('planDay').value);}
 async function savePlanDay(event){
@@ -119,8 +120,22 @@ function downloadBackup(){
   var url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='calisma-takip-'+todayStr()+'.json';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
 }
 async function useCloudCopy(){
-  if(!confirm('Önce bu cihazın yedeğini indir. Bulut kaydı yüklenirse bu cihazdaki bekleyen değişiklikler silinir. Devam edilsin mi?'))return;
-  try{var remote=await cloudRead();store=remote.data;cloudVersion=remote.version;pendingSync=false;syncConflict=false;
+  if(syncBusy)return;
+  var revision=editRevision;
+  try{var remote=await cloudRead();if(syncBusy||revision!==editRevision)return;
+    var backups=JSON.parse(localStorage.getItem('ct_conflict_backups_v1')||'[]');
+    backups.push({format:'calisma-takip-backup',version:1,exportedAt:new Date().toISOString(),store:syncClone(store),cloudVersion:cloudVersion,pending:pendingSync});
+    // If storage is full, abort before replacing the pending local copy.
+    localStorage.setItem('ct_conflict_backups_v1',JSON.stringify(backups));
+    store=remote.data;cloudVersion=remote.version;cloudBase=syncClone(remote.data);pendingSync=false;syncConflict=false;syncReady=true;syncReadFailed=false;
     normalizeStore();var initialized=initializeStudyPlan();lcSave();restoreTimer();renderAll();setSyncState('ok');if(initialized)await syncToCloud();
-  }catch(e){setSyncState('err');}
+    document.getElementById('recoveryStatus').textContent='Güncel kayıtlar yüklendi. Önceki cihaz kopyası saklandı; buradan indirebilirsin.';
+  }catch(e){setSyncState('err');document.getElementById('syncNotice').hidden=false;
+    document.getElementById('syncNotice').textContent='Güncel kayıtlar yüklenemedi. Bu cihazdaki kopya korundu. Bağlantıyı ve tarayıcının depolama alanını kontrol edip yeniden dene.';}
+}
+function downloadRecoveryBackup(){
+  var backups=JSON.parse(localStorage.getItem('ct_conflict_backups_v1')||'[]');
+  if(!backups.length){document.getElementById('recoveryStatus').textContent='Henüz saklanmış bir cihaz yedeği yok.';return;}
+  var blob=new Blob([JSON.stringify({format:'calisma-takip-recovery',version:1,backups:backups},null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='calisma-takip-cihaz-yedekleri-'+todayStr()+'.json';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
 }
