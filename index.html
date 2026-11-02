@@ -675,13 +675,10 @@ function renderStatsTab(){
     var secs=secsForDay(d);
     var goalH=store.dayGoals[d]||0;
     var goalS=goalH*3600;
-    var isPast=d<t, isToday=d===t;
+    var isToday=d===t;
     var cls='wday';
     if(isToday) cls+=' today';
-    if(goalS>0&&(isPast||isToday)){
-      if(secs>=goalS) cls+=' goal-met';
-      else cls+=' goal-missed';
-    }
+    cls+=dayGoalClass(d,secs,t);
     var dayNum=parseInt(d.slice(8));
     return '<div class="'+cls+'">'
       +'<div class="wday-name">'+dn[i]+'</div>'
@@ -695,6 +692,12 @@ function renderStatsTab(){
 }
 
 function renderTasksTab(){renderSessionTargets();}
+
+// Calendar and statistics use the same saved daily total and daily target.
+function dayGoalClass(date,seconds,today){
+  var goal=Math.max(0,Number(store.dayGoals[date])||0)*3600;
+  return goal>0&&date<=(today||todayStr())?(seconds>=goal?' goal-met':' goal-missed'):'';
+}
 
 // ── Calendar ──
 function renderCalendar(){
@@ -714,18 +717,12 @@ function renderCalendar(){
     var mm=String(calMonth+1).padStart(2,'0'),dd=String(day).padStart(2,'0');
     var ds=calYear+'-'+mm+'-'+dd;
     var secs=secsForDay(ds);
-    var wk=weekOf(ds);
-    var wkGoalS=weekGoalSecs(wk);
-    var wkSecs=secsForWeek(wk);
-    var isPast=ds<t, isToday=ds===t;
+    var isToday=ds===t;
 
     var cls='cal-day';
     if(isToday) cls+=' today';
     if(ds===selectedDay) cls+=' selected';
-    if(wkGoalS>0&&(isPast||isToday)){
-      if(wkSecs>=wkGoalS) cls+=' goal-met';
-      else if(isPast) cls+=' goal-missed';
-    }
+    cls+=dayGoalClass(ds,secs,t);
 
     var plans=sessionPlansForDay(ds),plannedCourse=courseForDay(ds);
     if(plans.length)cls+=' has-session-plan';
@@ -1034,8 +1031,8 @@ function restoreTimer(){
         ctx.lineWidth=d.width;
         ctx.lineCap='round';
         ctx.stroke();
-        d.x+=dx*d.speed*dt;
-        d.y+=dy*d.speed*dt;
+        d.x+=dx*d.speed;
+        d.y+=dy*d.speed;
         if(d.y>height+PAD||d.x>width+PAD) drops[i]=spawnDrop(false);
       }
     }

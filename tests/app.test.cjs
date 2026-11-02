@@ -16,6 +16,30 @@ function harness(){
   context.normalizeStore();context.renderAll=()=>{};
   return {c:context,element,storage};
 }
+
+test('calendar and statistics color each day by its own target, independently of the weekly total',()=>{
+  const {c,element}=harness();
+  c.Date=class extends Date{constructor(...args){super(...(args.length?args:['2026-11-02T12:00:00']));}};
+  c.todayStr=()=> '2026-11-02';c.calYear=2026;c.calMonth=10;
+  c.store.dayGoals={'2026-11-01':4,'2026-11-02':2,'2026-11-03':2,'2026-11-04':2};
+  c.store.sessions=[{date:'2026-11-01',duration:14520},{date:'2026-11-02',duration:7200}];
+  // Both days reach their own goals even though their weeks remain incomplete.
+  c.renderCalendar();c.renderStatsTab();
+  const tile=(date)=>element('calGrid').innerHTML.match(new RegExp('<button[^>]+onclick="selectDay\\(\\\''+date+'\\\'\\)">'))?.[0];
+  assert.match(tile('2026-11-01'),/goal-met/);
+  assert.match(tile('2026-11-02'),/goal-met/);
+  assert.match(element('weekGrid').innerHTML, /class="wday today goal-met"/);
+  assert.doesNotMatch(tile('2026-11-03'),/goal-met|goal-missed/);
+  // A different day's excess must not turn an incomplete day green.
+  c.store.sessions=[{date:'2026-11-01',duration:100},{date:'2026-11-02',duration:100},{date:'2026-11-03',duration:100000}];
+  c.renderCalendar();c.renderStatsTab();
+  assert.match(tile('2026-11-01'),/goal-missed/);
+  assert.match(tile('2026-11-02'),/goal-missed/);
+  assert.match(element('weekGrid').innerHTML, /class="wday today goal-missed"/);
+  c.store.dayGoals['2026-11-02']=0;c.renderCalendar();c.renderStatsTab();
+  assert.doesNotMatch(tile('2026-11-02'),/goal-met|goal-missed/);
+  assert.match(element('weekGrid').innerHTML, /class="wday today"/);
+});
 test('agreed schedule, goals and historical totals migrate once without duplicating work',()=>{
   const {c}=harness();c.store.sessions=[{date:'2026-10-27',duration:3600},{date:'2026-10-28',duration:9000}];
   c.store.dayGoals['2026-10-30']=3;
