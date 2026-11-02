@@ -3,16 +3,17 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-function scene(reduced = false, storage = new Map()) {
+function scene(reduced = false, storage = new Map(), random = Math.random) {
   const scripts = [...fs.readFileSync('index.html', 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)];
   const events = {}, frames = new Map();
-  let clock = 0, next = 0, strokes = 0, motionChange;
+  let clock = 0, next = 0, strokes = 0, motionChange, labels = [];
   class Element {
     constructor(isBlank = true) { this.isBlank = isBlank; }
     matches() { return this.isBlank; }
   }
   const ctx = new Proxy({}, {get(_, key) {
     if (key === 'stroke') return () => strokes++;
+    if (key === 'fillText') return name => labels.push(name);
     if (key === 'createLinearGradient' || key === 'createRadialGradient') return () => ({addColorStop() {}});
     return () => {};
   }, set() { return true; }});
@@ -24,11 +25,11 @@ function scene(reduced = false, storage = new Map()) {
     matchMedia: () => motion, addEventListener() {}};
   vm.runInNewContext(scripts.at(-1)[1], {window, document, Element,
     localStorage: {getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value)},
-    performance: {now: () => clock}, Date, Math,
+    performance: {now: () => clock}, Date, Math: Object.assign(Object.create(Math), {random}),
     requestAnimationFrame(fn) { frames.set(++next, fn); return next; },
     cancelAnimationFrame(id) { frames.delete(id); }});
   function frame(time) {
-    clock = time; strokes = 0;
+    clock = time; strokes = 0; labels = [];
     const pending = [...frames.values()]; frames.clear();
     pending.forEach(fn => fn(clock)); return strokes;
   }
@@ -38,7 +39,7 @@ function scene(reduced = false, storage = new Map()) {
     window.scrollY += scroll;
     events.pointerup({pointerId: 1, clientX: 190 + move, clientY: 450, target});
   }
-  return {frame, tap, frames, document, events, motion, window,
+  return {frame, tap, frames, document, events, motion, window, labels: () => labels,
     changeMotion(value) { motion.matches = value; motionChange(); }};
 }
 
@@ -49,7 +50,19 @@ test('blank-space taps add a temporary meteor shower; controls and scroll gestur
   s.tap({move: 30}); assert.equal(s.frame(500), 42);
   s.tap({scroll: 50}); assert.equal(s.frame(700), 42);
   s.tap(); assert.ok(s.frame(1000) > 42);
-  assert.equal(s.frame(4000), 42);
+  assert.equal(s.frame(5000), 42);
+});
+
+test('zodiac taps can show all twelve names and never repeat the previous constellation', () => {
+  let seed=17;
+  const s=scene(false,new Map(),()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296));
+  const seen=new Set();let previous;
+  for(let i=0;i<120;i++){
+    const now=100+i*5000;s.frame(now);s.tap();s.frame(now+1700);
+    const names=s.labels();assert.equal(names.length,1);
+    assert.notEqual(names[0],previous);previous=names[0];seen.add(names[0]);
+  }
+  assert.deepEqual([...seen].sort(),['Koç','Boğa','İkizler','Yengeç','Aslan','Başak','Terazi','Akrep','Yay','Oğlak','Kova','Balık'].sort());
 });
 
 test('reduced motion disables animation and hiding the app stops pending frames', () => {
