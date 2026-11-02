@@ -82,8 +82,13 @@ function plannedSessionText(date){
   var rows=sessionPlansForDay(date);return rows.length?rows.map(function(p){return esc(p.target.title)+': '+p.completed+' / '+p.count+' seans'+(p.shared?' · '+planDate(p.start)+' – '+planDate(p.end)+' ortak hedef':'');}).join('<br>'):'Bu güne seans hedefi atanmadı.';
 }
 function calendarSessionHtml(date,course){
-  var plans=sessionPlansForDay(date);return plans.slice(0,2).map(function(p){return '<span class="cal-session'+(p.completed>=p.count?' done':'')+'" title="'+esc(p.target.title+' · '+p.completed+' / '+p.count+' seans'+(p.shared?' · tarih aralığının ortak hedefi':''))+'">'+(!course||p.target.title!==course.name?'<span class="cal-session-title">'+esc(p.target.title)+'</span>':'')+'<span class="cal-session-count">'+p.completed+'/'+p.count+'<span class="cal-session-unit"> seans</span></span>'+(p.shared?'<span class="cal-session-shared">Ortak</span>':'')+'</span>';}).join('')+(plans.length>2?'<span class="cal-session-more">+'+(plans.length-2)+' hedef</span>':'');
+  var plans=sessionPlansForDay(date);
+  if(!plans.length)return '<span class="cal-session-summary" aria-hidden="true"></span>';
+  var completed=plans.reduce(function(n,p){return n+p.completed;},0),total=plans.reduce(function(n,p){return n+p.count;},0);
+  var description=plans.map(function(p){return p.target.title+': '+p.completed+'/'+p.count+' seans';}).join(' · ');
+  return '<span class="cal-session-summary" title="'+esc(description)+'">'+completed+'/'+total+'</span>';
 }
+
 function showWorkflow(kind,title,body,state,extra){
   workflowState=Object.assign({kind:kind},state||{});var dialog=document.getElementById('workflowDialog');
   document.getElementById('workflowTitle').textContent=title;document.getElementById('workflowBody').innerHTML=body;

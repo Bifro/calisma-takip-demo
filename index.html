@@ -24,7 +24,7 @@
   --red:#D85A30;--red-dim:rgba(216,90,48,0.15);
   --yellow:#d4a017;
   --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;
-  --r:12px;--r-sm:8px;
+  --r:12px;--r-sm:8px;--study-duration-size:18px;
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;overscroll-behavior:none}
 .app{display:flex;flex-direction:column;min-height:100dvh;max-width:480px;margin:0 auto;position:relative;z-index:1}
@@ -75,7 +75,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem}
 .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);padding:.9rem .5rem;text-align:center}
 .stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
-.stat-value{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--text)}
+.stat-value{font-family:var(--mono);font-size:var(--study-duration-size);font-weight:500;color:var(--text)}
 .sec-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
 .session-list{display:flex;flex-direction:column;gap:6px}
 .session-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 14px}
@@ -195,7 +195,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .panel-add-row input::placeholder{color:var(--text3)}
 .btn-add-sm{background:var(--green);color:#fff;border:none;border-radius:var(--r-sm);padding:7px 12px;font-size:12px;cursor:pointer;font-family:var(--sans);white-space:nowrap}
 </style>
-<link rel="stylesheet" href="plan.css?v=20261101-4"/>
+<link rel="stylesheet" href="plan.css?v=20261101-5"/>
 <link rel="stylesheet" href="mobile.css"/>
 </head>
 <body>
@@ -313,7 +313,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 
 <dialog id="workflowDialog" class="workflow-dialog" aria-labelledby="workflowTitle"><form id="workflowForm" onsubmit="saveWorkflow(event)"><div class="work-head"><h2 id="workflowTitle"></h2><button type="button" class="workflow-close" aria-label="Kapat" onclick="closeWorkflow()">×</button></div><div id="workflowBody"></div><p id="workflowError" class="plan-error" role="alert"></p><div class="workflow-footer"><button type="submit" id="workflowSave">Kaydet</button><button type="button" class="work-edit" onclick="closeWorkflow()">Vazgeç</button></div><div id="workflowExtra"></div></form></dialog>
 <script src="plan.js?v=20261101-4"></script>
-<script src="workflow.js?v=20261101-4"></script>
+<script src="workflow.js?v=20261101-5"></script>
 <script>
 // store.dayTasks:   { "2025-04-21": [{text,done},...] }
 // store.weekTasks:  { "2025-04-14": [{text,done},...] }  key=monday
@@ -552,6 +552,7 @@ function weekGoalSecs(wk){
 function weekGoalHours(wk){return weekGoalSecs(wk)/3600;}
 
 // ── Timer ──
+function fmtCalendarDur(seconds){var value=Math.max(0,Math.floor(Number(seconds)||0)),minutes=Math.floor(value/60);return minutes>=60?Math.floor(minutes/60)+'s'+(minutes%60?minutes%60+'d':''):minutes?minutes+'d':value+'sn';}
 function fmtGoalTime(seconds){var minutes=Math.floor(Math.max(0,Number(seconds)||0)/60+1e-7);return Math.floor(minutes/60)+'s '+minutes%60+'d';}
 function dailyGoalProgress(now){
   if(now===undefined)now=Date.now();var date=localStr(new Date(now)),saved=secsForDay(date),live=0;
@@ -731,8 +732,8 @@ function renderCalendar(){
     var planLabel=plans.map(function(p){return p.target.title+': '+p.completed+'/'+p.count+' seans'+(p.shared?' ortak hedef':'');}).join(' · ');
     html+='<button type="button" class="'+cls+'" aria-label="'+fmtDateLong(ds)+(plannedCourse?' · '+esc(plannedCourse.name):'')+(planLabel?' · '+esc(planLabel):'')+'" aria-pressed="'+(ds===selectedDay)+'" onclick="selectDay(\''+ds+'\')">'
       +'<span class="cal-day-num">'+day+'</span>'
-      +(plannedCourse?'<span class="cal-course" title="'+esc(plannedCourse.name)+'">'+esc(plannedCourse.name)+'</span>':'')
-      +(secs?'<span class="cal-day-dur">'+fmtDur(secs)+'</span>':'')
+      +'<span class="cal-course"'+(plannedCourse?' title="'+esc(plannedCourse.name)+'"':'')+'>'+(plannedCourse?esc(plannedCourse.name):'')+'</span>'
+      +'<span class="cal-day-dur"'+(secs?' title="Çalışılan: '+esc(fmtDur(secs))+'"':'')+'>'+(secs?fmtCalendarDur(secs):'')+'</span>'
       +calendarSessionHtml(ds,plannedCourse)
       +'</button>';
   }

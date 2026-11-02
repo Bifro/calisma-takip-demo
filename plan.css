@@ -53,14 +53,16 @@
 .workflow-danger{background:transparent;border:1px solid var(--red-dim);color:var(--red);border-radius:8px;padding:10px 12px;min-height:44px;font:13px var(--sans);margin-top:16px;cursor:pointer}
 .schedule-edit-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;border:1px solid var(--border);border-radius:10px;padding:10px;margin:10px 0}.schedule-edit-row label{margin:0}.schedule-edit-row>button{align-self:end}
 @media(max-width:360px){.work-head{gap:6px}.work-card{padding:11px}.work-edit{padding:8px}.workflow-dialog{padding:16px}.workflow-footer{bottom:-16px}.duration-fields{gap:8px}.work-actions>button:first-child{max-width:100%;white-space:normal;text-align:left}}
-/* Calendar goals include both dated distributions and undivided target ranges. */
-.cal-session{display:block;margin-top:4px;padding-top:3px;border-top:1px solid var(--border);font-size:9px;line-height:1.35;color:var(--green);min-width:0}
-.cal-session-title,.cal-session-count{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
-.cal-session-title{color:var(--text2)}.cal-session.done .cal-session-count{color:var(--green)}.cal-session-more{display:block;color:var(--text2);font-size:9px;margin-top:3px}
-.cal-day.has-session-plan{min-height:70px}
-.work-card .work-head{align-items:flex-start}.work-card .work-head .work-duration{font-size:clamp(21px,5.5vw,26px);line-height:1.25;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+/* Four stable calendar slots: day, course, study duration and session count. */
+#calGrid{grid-template-rows:auto;grid-auto-rows:68px}
+#calGrid>.cal-day{display:grid;grid-template-rows:16px 12px 12px 12px;row-gap:2px;align-content:start;height:68px;min-height:68px;max-height:68px;overflow:hidden}
+#calGrid .cal-day-num{margin:0;line-height:16px}
+#calGrid .cal-course,#calGrid .cal-day-dur,#calGrid .cal-session-summary{display:block;min-width:0;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;line-height:12px;margin:0}
+.cal-session-summary{font:9px var(--mono);color:var(--green)}
+.cal-key{font-size:11px;line-height:1.5;color:var(--text2);margin:0 0 8px}
+.work-card .work-head{align-items:flex-start}.work-card .work-head .work-duration{font-size:var(--study-duration-size);line-height:1.25;font-variant-numeric:tabular-nums;letter-spacing:normal}
 .work-card .work-actions>.work-edit{font-size:11px;padding:6px 8px;border-color:transparent;background:transparent}
-.daily-goal-area{width:100%;min-width:0}.daily-goal{font-size:16px;line-height:1.6;font-variant-numeric:tabular-nums}#dailyGoalTotal{font-size:14px;color:var(--text2)}
-.daily-goal-bar{display:block;width:100%;height:5px;accent-color:var(--green);margin-top:5px}.daily-goal-bar[hidden],.daily-goal-live[hidden]{display:none}.daily-goal-live{display:block;color:var(--text2);font:11px var(--sans);margin-top:5px}
-.cal-key{font-size:11px;line-height:1.5;color:var(--text2);margin:0 0 8px}.cal-session-shared{display:block;font-size:8px;color:var(--text2);line-height:1.3}
-@media(max-width:600px){.cal-session-unit{display:none}}
+.daily-goal-area{width:100%;min-width:0;padding-bottom:6px}.daily-goal-area .today-info-label{margin-bottom:5px}
+.daily-goal{font-size:16px;line-height:1.6;font-variant-numeric:tabular-nums}#dailyGoalTotal{font-size:14px;color:var(--text2)}
+.daily-goal-bar{display:block;width:100%;height:5px;accent-color:var(--green);margin:8px 0 0}.daily-goal-bar[hidden],.daily-goal-live[hidden]{display:none}.daily-goal-live{display:block;color:var(--text2);font:11px var(--sans);margin-top:7px}
+@media(max-width:360px){:root{--study-duration-size:16px}#calGrid>.cal-day{padding:3px}#calGrid .cal-day-dur{font-size:8px}}
