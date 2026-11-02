@@ -199,7 +199,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 <link rel="stylesheet" href="mobile.css"/>
 </head>
 <body>
-<canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none"></canvas>
+<canvas id="bgCanvas" aria-hidden="true" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none"></canvas>
 <div class="loading-overlay" id="loadingOverlay">
   <div class="loading-spinner"></div>
   <div class="loading-text">Veriler yükleniyor...</div>
@@ -885,15 +885,18 @@ function restoreTimer(){
 </script>
 <script>
 (function(){
-  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  var motion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)');
   var canvas=document.getElementById('bgCanvas');
   var ctx=canvas.getContext('2d');
+  if(!ctx)return;
   var angle=Math.PI/5;
   var dx=Math.sin(angle);
   var dy=Math.cos(angle);
   var PAD=120;
   var drops=[];
   var hearts=[];
+  var showers=[],sparks=[],rings=[];
+  var width=0,height=0,lastFrame=0,frame=0,press=null,lastTap=-1000;
 
   function rand(a,b){return a+Math.random()*(b-a)}
 
@@ -905,28 +908,30 @@ function restoreTimer(){
   var HEART_MODE=checkSpecialDay();
 
   function resize(){
-    canvas.width=window.innerWidth;
-    canvas.height=window.innerHeight;
+    width=window.innerWidth;height=window.innerHeight;
+    var ratio=Math.min(window.devicePixelRatio||1,1.5);
+    canvas.width=Math.round(width*ratio);canvas.height=Math.round(height*ratio);
+    ctx.setTransform(ratio,0,0,ratio,0,0);
   }
   resize();
   window.addEventListener('resize',resize);
 
   function spawnDrop(initial){
     var x,y;
-    if(initial){x=rand(-PAD,canvas.width+PAD);y=rand(-PAD,canvas.height+PAD);}
+    if(initial){x=rand(-PAD,width+PAD);y=rand(-PAD,height+PAD);}
     else{
-      var perim=(canvas.width+PAD*2)+(canvas.height+PAD*2);
+      var perim=(width+PAD*2)+(height+PAD*2);
       var r=Math.random()*perim;
-      if(r<canvas.width+PAD*2){x=rand(-PAD,canvas.width+PAD);y=rand(-PAD,-10);}
-      else{x=rand(-PAD,-10);y=rand(-PAD,canvas.height+PAD);}
+      if(r<width+PAD*2){x=rand(-PAD,width+PAD);y=rand(-PAD,-10);}
+      else{x=rand(-PAD,-10);y=rand(-PAD,height+PAD);}
     }
     return{x:x,y:y,len:rand(16,46),speed:rand(0.55,1.35),opacity:rand(0.3,0.85),width:rand(0.7,1.7)};
   }
 
   function spawnHeart(initial){
     var x,y;
-    if(initial){x=rand(0,canvas.width);y=rand(-canvas.height,canvas.height);}
-    else{x=rand(-40,canvas.width+40);y=rand(-60,-10);}
+    if(initial){x=rand(0,width);y=rand(-height,height);}
+    else{x=rand(-40,width+40);y=rand(-60,-10);}
     return{
       x:x, y:y,
       size:rand(10,20),
@@ -939,9 +944,66 @@ function restoreTimer(){
   for(var i=0;i<42;i++) drops.push(spawnDrop(true));
   if(HEART_MODE) for(var i=0;i<36;i++) hearts.push(spawnHeart(true));
 
-  function draw(){
+  function color(alpha){return (window.laserPurple?'rgba(180,70,255,':'rgba(255,65,55,')+alpha+')';}
+  function streak(x,y,vx,vy,length,alpha,lineWidth){
+    var grad=ctx.createLinearGradient(x-vx*length,y-vy*length,x,y);
+    grad.addColorStop(0,color(0));grad.addColorStop(.65,color(alpha*.65));grad.addColorStop(1,color(alpha));
+    ctx.beginPath();ctx.moveTo(x-vx*length,y-vy*length);ctx.lineTo(x,y);
+    ctx.strokeStyle=grad;ctx.lineWidth=lineWidth;ctx.lineCap='round';ctx.stroke();
+  }
+  function showerAt(x,y,now){
+    // The scene is decorative and bounded, even after many rapid taps.
+    if(showers.length>=3)showers.shift();
+    rings.push({x:x,y:y,born:now});if(rings.length>3)rings.shift();
+    var meteors=[];
+    for(var i=0;i<20;i++){
+      var direction=rand(.27,.85),distance=rand(180,Math.min(560,height*.75+180));
+      meteors.push({x:x+rand(-22,22),y:y+rand(-14,14),vx:Math.sin(direction),vy:Math.cos(direction),distance:distance,delay:i*27+rand(0,60),duration:rand(440,760),length:rand(30,65),width:rand(.8,1.8),hit:false});
+    }
+    showers.push({born:now,meteors:meteors});
+  }
+  function blank(target){return target instanceof Element&&target.matches('body,.app,.content,.section,#bgCanvas');}
+  document.addEventListener('pointerdown',function(e){
+    press=null;
+    if(e.isPrimary&&e.button===0&&blank(e.target)&&!document.querySelector('dialog[open]')&&!(motion&&motion.matches))
+      press={id:e.pointerId,x:e.clientX,y:e.clientY,scroll:window.scrollY};
+  },{passive:true});
+  document.addEventListener('pointercancel',function(){press=null;},{passive:true});
+  document.addEventListener('pointerup',function(e){
+    var start=press;press=null;var now=performance.now();
+    if(!start||start.id!==e.pointerId||!blank(e.target)||Math.hypot(e.clientX-start.x,e.clientY-start.y)>12||Math.abs(window.scrollY-start.scroll)>4||now-lastTap<180)return;
+    lastTap=now;showerAt(e.clientX,e.clientY,now);
+  },{passive:true});
+  function drawShowers(now,dt){
+    rings=rings.filter(function(r){
+      var age=(now-r.born)/900;if(age>=1)return false;
+      ctx.beginPath();ctx.arc(r.x,r.y,5+age*32,0,Math.PI*2);
+      ctx.strokeStyle=color((1-age)*.3);ctx.lineWidth=1;ctx.stroke();return true;
+    });
+    showers=showers.filter(function(s){
+      var alive=false;
+      s.meteors.forEach(function(m){
+        var age=now-s.born-m.delay;if(age<0){alive=true;return;}
+        if(age>m.duration){
+          if(!m.hit){m.hit=true;for(var k=0;k<3;k++){var a=rand(0,Math.PI*2),speed=rand(.35,1.3);sparks.push({x:m.x,y:m.y,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,born:now,life:rand(260,480)});}}
+          return;
+        }
+        alive=true;var p=age/m.duration,remaining=m.distance*(1-p);
+        streak(m.x-m.vx*remaining,m.y-m.vy*remaining,m.vx,m.vy,m.length,Math.min(1,p*6)*.85,m.width);
+      });return alive;
+    });
+    if(sparks.length>100)sparks.splice(0,sparks.length-100);
+    sparks=sparks.filter(function(s){var age=(now-s.born)/s.life;if(age>=1)return false;
+      s.x+=s.vx*dt;s.y+=s.vy*dt;s.vy+=.012*dt;
+      ctx.fillStyle=color((1-age)*.7);ctx.beginPath();ctx.arc(s.x,s.y,1.2*(1-age)+.3,0,Math.PI*2);ctx.fill();return true;
+    });
+  }
+  function draw(now){
+    frame=0;
+    if(document.hidden||(motion&&motion.matches)){lastFrame=0;return;}
+    var dt=lastFrame?Math.min((now-lastFrame)/16.667,2):1;lastFrame=now;
     ctx.fillStyle='rgba(15,15,15,0.88)';
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillRect(0,0,width,height);
 
     if(HEART_MODE){
       for(var i=0;i<hearts.length;i++){
@@ -953,9 +1015,9 @@ function restoreTimer(){
         ctx.textBaseline='middle';
         ctx.fillText('💜',h.x,h.y);
         ctx.restore();
-        h.y+=h.speed;
-        h.x+=h.drift;
-        if(h.y>canvas.height+40) hearts[i]=spawnHeart(false);
+        h.y+=h.speed*dt;
+        h.x+=h.drift*dt;
+        if(h.y>height+40) hearts[i]=spawnHeart(false);
       }
     } else {
       for(var i=0;i<drops.length;i++){
@@ -972,14 +1034,23 @@ function restoreTimer(){
         ctx.lineWidth=d.width;
         ctx.lineCap='round';
         ctx.stroke();
-        d.x+=dx*d.speed;
-        d.y+=dy*d.speed;
-        if(d.y>canvas.height+PAD||d.x>canvas.width+PAD) drops[i]=spawnDrop(false);
+        d.x+=dx*d.speed*dt;
+        d.y+=dy*d.speed*dt;
+        if(d.y>height+PAD||d.x>width+PAD) drops[i]=spawnDrop(false);
       }
     }
-    requestAnimationFrame(draw);
+    drawShowers(now,dt);
+    frame=requestAnimationFrame(draw);
   }
-  draw();
+  function resume(){
+    if(frame)cancelAnimationFrame(frame);frame=0;lastFrame=0;
+    showers=[];sparks=[];rings=[];press=null;
+    if(motion&&motion.matches){ctx.clearRect(0,0,width,height);return;}
+    if(!document.hidden)frame=requestAnimationFrame(draw);
+  }
+  document.addEventListener('visibilitychange',resume);
+  if(motion&&motion.addEventListener)motion.addEventListener('change',resume);
+  resume();
 })();
 </script>
 </body>

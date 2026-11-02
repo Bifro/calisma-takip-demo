@@ -1,10 +1,10 @@
 # Çalışma Takip · Android
 
-Android 8+ için tam Çalışma Takip uygulaması. 3.1.1 sürümü, web sitesinin aynı HTML/CSS/JavaScript dosyalarını APK içine paketler: Kronometre, İstatistik, Görevler, Takvim ve Planım sekmelerinin tamamı uygulamanın içindedir. Ayrı tarayıcı açmak gerekmez. Kilit ekranındaki yerel kronometre kontrolleri korunur.
+Android 8+ için tam Çalışma Takip uygulaması. 3.2.0 sürümü, web sitesinin aynı HTML/CSS/JavaScript dosyalarını APK içine paketler: Kronometre, İstatistik, Görevler, Takvim ve Planım sekmelerinin tamamı uygulamanın içindedir. Ayrı tarayıcı açmak gerekmez. Kilit ekranındaki yerel kronometre kontrolleri korunur.
 
 ## Kurulum
 
-1. Telefonda [APK’yı indir](https://bifro.github.io/calisma-takip-demo/downloads/calisma-takip-3.1.1.apk) ve Android'in paket yükleyicisiyle mevcut kurulumun üzerine güncelle.
+1. Telefonda [APK’yı indir](https://bifro.github.io/calisma-takip-demo/downloads/calisma-takip-3.2.0.apk) ve Android'in paket yükleyicisiyle mevcut kurulumun üzerine güncelle.
 2. Gerekirse kullandığın tarayıcı/dosya uygulaması için bu APK'yı yükleme iznini Android ayarlarından ver.
 3. Uygulamayı ilk kez internet açıkken başlat. Mevcut Firebase planı ve kronometre yüklenir.
 4. **Planım → Telefon bildirimleri → Kilit ekranı bildirimini aç** düğmesine dokun ve bildirim iznini ver. Telefonun kilit ekranı ayarlarında bu uygulamanın bildirimlerinin gösterilmesine izin ver.
@@ -40,7 +40,7 @@ Harici bağımlılık veya paket kurulumu yoktur. Android SDK 36.1, Build Tools 
 .\build.ps1 -SdkRoot 'C:\Users\fberk\AppData\Local\Android\Sdk' -WithTests
 ```
 
-`aapt2`, `javac`, D8, zipalign ve apksigner çalıştırılır. Türkçe klasör adlarıyla Android araçlarının uyumu için derleme ASCII isimli geçici klasörde yapılır; `-WorkRoot` ile yer seçilebilir. Son dosya `dist/calisma-takip-3.1.1.apk` olur; dosya sürümü manifestten alınır.
+`aapt2`, `javac`, D8, zipalign ve apksigner çalıştırılır. Türkçe klasör adlarıyla Android araçlarının uyumu için derleme ASCII isimli geçici klasörde yapılır; `-WorkRoot` ile yer seçilebilir. Son dosya `dist/calisma-takip-3.2.0.apk` olur; dosya sürümü manifestten alınır.
 
 Bu bir kişisel kurulum APK'sıdır; mağaza yayını yapılmamıştır. Sürüm güncellemeleri için aynı imza gerekir. Özel anahtar ve parolası `.signing/` altında yalnızca yerelde saklanır, GitHub'a yüklenmez. Bu klasör güvenli biçimde yedeklenmelidir. Test APK'sı kullanıcıya dağıtılmaz.
 
@@ -49,7 +49,7 @@ Bu bir kişisel kurulum APK'sıdır; mağaza yayını yapılmamıştır. Sürüm
 `tests/TimerInstrumentation.java`, ayrı bir Android 16 emülatöründe sahte bir bellek veritabanı ve ayrı test tercihleri kullanır. Canlı Firestore'a yalnızca okuma kontrolü yapılır; üretim belgesine test kaydı yazılmaz. Kontroller: JSON veri uyumu, gece yarısı bölünmesi, tekrar kaydetme, başka cihazdaki yeni sayaç, kalıcı çevrimdışı kuyruk, koşullu yazma çakışması, web/APK çift kayıt önleme, kartın çizimi, sistem kronometreli bildirim ve bildirimdeki Kaydet eylemi.
 
 ```text
-adb -s emulator-5580 install -r dist/calisma-takip-3.1.1.apk
+adb -s emulator-5580 install -r dist/calisma-takip-3.2.0.apk
 adb -s emulator-5580 install -r dist/timer-tests.apk
 adb -s emulator-5580 shell am instrument -w tr.bifro.calisma.tests/tr.bifro.calisma.TimerInstrumentation
 ```
