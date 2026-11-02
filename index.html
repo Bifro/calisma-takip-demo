@@ -312,7 +312,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 </div>
 
 <dialog id="workflowDialog" class="workflow-dialog" aria-labelledby="workflowTitle"><form id="workflowForm" onsubmit="saveWorkflow(event)"><div class="work-head"><h2 id="workflowTitle"></h2><button type="button" class="workflow-close" aria-label="Kapat" onclick="closeWorkflow()">×</button></div><div id="workflowBody"></div><p id="workflowError" class="plan-error" role="alert"></p><div class="workflow-footer"><button type="submit" id="workflowSave">Kaydet</button><button type="button" class="work-edit" onclick="closeWorkflow()">Vazgeç</button></div><div id="workflowExtra"></div></form></dialog>
-<script src="plan.js?v=20261101-4"></script>
+<script src="plan.js?v=20261102-1"></script>
 <script src="workflow.js?v=20261101-5"></script>
 <script>
 // store.dayTasks:   { "2025-04-21": [{text,done},...] }
@@ -893,7 +893,15 @@ function restoreTimer(){
   var drops=[];
   var hearts=[];
   var showers=[],sparks=[],rings=[];
+  var stars=[],constellations=[],sceneMode='cosmic';
+  var pointer={x:0,y:0},parallax={x:0,y:0};
   var width=0,height=0,lastFrame=0,frame=0,press=null,lastTap=-1000;
+  try{if(localStorage.getItem('ct_space_scene')==='classic')sceneMode='classic';}catch(e){}
+  window.spaceSceneMode=function(){return sceneMode;};
+  window.setSpaceScene=function(value){
+    sceneMode=value==='classic'?'classic':'cosmic';constellations=[];
+    try{localStorage.setItem('ct_space_scene',sceneMode);}catch(e){}
+  };
 
   function rand(a,b){return a+Math.random()*(b-a)}
 
@@ -939,6 +947,7 @@ function restoreTimer(){
   }
 
   for(var i=0;i<42;i++) drops.push(spawnDrop(true));
+  for(var i=0;i<72;i++)stars.push({x:Math.random(),y:Math.random(),size:rand(.45,1.15),phase:rand(0,Math.PI*2),period:rand(3000,7500),depth:rand(.3,1)});
   if(HEART_MODE) for(var i=0;i<36;i++) hearts.push(spawnHeart(true));
 
   function color(alpha){return (window.laserPurple?'rgba(180,70,255,':'rgba(255,65,55,')+alpha+')';}
@@ -952,6 +961,14 @@ function restoreTimer(){
     // The scene is decorative and bounded, even after many rapid taps.
     if(showers.length>=3)showers.shift();
     rings.push({x:x,y:y,born:now});if(rings.length>3)rings.shift();
+    if(sceneMode==='cosmic'){
+      var points=[{x:x,y:y}];
+      for(var j=0;j<4;j++){
+        var a=j*Math.PI*.53+rand(-.2,.2),radius=rand(28,74);
+        points.push({x:x+Math.cos(a)*radius,y:y+Math.sin(a)*radius});
+      }
+      constellations.push({points:points,born:now});if(constellations.length>3)constellations.shift();
+    }
     var meteors=[];
     for(var i=0;i<20;i++){
       var direction=rand(.27,.85),distance=rand(180,Math.min(560,height*.75+180));
@@ -960,6 +977,10 @@ function restoreTimer(){
     showers.push({born:now,meteors:meteors});
   }
   function blank(target){return target instanceof Element&&target.matches('body,.app,.content,.section,#bgCanvas');}
+  document.addEventListener('pointermove',function(e){
+    if(e.pointerType==='mouse'){pointer.x=(e.clientX/width-.5)*2;pointer.y=(e.clientY/height-.5)*2;}
+  },{passive:true});
+  document.addEventListener('pointerleave',function(){pointer.x=0;pointer.y=0;},{passive:true});
   document.addEventListener('pointerdown',function(e){
     press=null;
     if(e.isPrimary&&e.button===0&&blank(e.target)&&!document.querySelector('dialog[open]')&&!(motion&&motion.matches))
@@ -995,12 +1016,45 @@ function restoreTimer(){
       ctx.fillStyle=color((1-age)*.7);ctx.beginPath();ctx.arc(s.x,s.y,1.2*(1-age)+.3,0,Math.PI*2);ctx.fill();return true;
     });
   }
+  function drawSpace(now,dt){
+    // Broad gradients and a small star field add depth without image assets or blur filters.
+    parallax.x+=(pointer.x-parallax.x)*Math.min(1,.035*dt);
+    parallax.y+=(pointer.y-parallax.y)*Math.min(1,.035*dt);
+    var x=width*(.14+.035*Math.sin(now/24000)),y=height*(.28+.04*Math.cos(now/29000));
+    var radius=Math.min(460,Math.max(220,width*.65));
+    var nebula=ctx.createRadialGradient(x,y,0,x,y,radius);
+    nebula.addColorStop(0,color(.085+.012*Math.sin(now/8500)));
+    nebula.addColorStop(.45,color(.035));nebula.addColorStop(1,color(0));
+    ctx.fillStyle=nebula;ctx.fillRect(0,0,width,height);
+    var x2=width*.91,y2=height*(.75+.035*Math.sin(now/31000));
+    var glow=ctx.createRadialGradient(x2,y2,0,x2,y2,radius*.85);
+    glow.addColorStop(0,window.laserPurple?'rgba(100,35,180,.07)':'rgba(175,65,24,.065)');
+    glow.addColorStop(1,'rgba(15,15,15,0)');ctx.fillStyle=glow;ctx.fillRect(0,0,width,height);
+    var count=Math.min(stars.length,Math.max(22,Math.round(width*height/15000)));
+    for(var i=0;i<count;i++){
+      var s=stars[i],alpha=.16+.22*(.5+.5*Math.sin(now/s.period+s.phase));
+      var sx=s.x*width+parallax.x*7*s.depth,sy=s.y*height+parallax.y*7*s.depth;
+      ctx.fillStyle='rgba(235,218,207,'+alpha+')';ctx.fillRect(sx,sy,s.size,s.size);
+      if(i%13===0){ctx.fillStyle='rgba(245,190,175,'+(alpha*.32)+')';ctx.fillRect(sx-2,sy,5,1);ctx.fillRect(sx,sy-2,1,5);}
+    }
+  }
+  function drawConstellations(now){
+    constellations=constellations.filter(function(c){
+      var age=(now-c.born)/2800;if(age>=1)return false;
+      var alpha=Math.min(1,age*6)*Math.min(1,(1-age)*2);
+      ctx.beginPath();c.points.forEach(function(p,i){if(i)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y);});
+      ctx.strokeStyle=color(alpha*.24);ctx.lineWidth=.65;ctx.stroke();
+      c.points.forEach(function(p){ctx.beginPath();ctx.arc(p.x,p.y,1.6,0,Math.PI*2);ctx.fillStyle=color(alpha*.75);ctx.fill();});
+      return true;
+    });
+  }
   function draw(now){
     frame=0;
     if(document.hidden||(motion&&motion.matches)){lastFrame=0;return;}
     var dt=lastFrame?Math.min((now-lastFrame)/16.667,2):1;lastFrame=now;
     ctx.fillStyle='rgba(15,15,15,0.88)';
     ctx.fillRect(0,0,width,height);
+    if(sceneMode==='cosmic')drawSpace(now,dt);
 
     if(HEART_MODE){
       for(var i=0;i<hearts.length;i++){
@@ -1036,12 +1090,13 @@ function restoreTimer(){
         if(d.y>height+PAD||d.x>width+PAD) drops[i]=spawnDrop(false);
       }
     }
+    if(sceneMode==='cosmic')drawConstellations(now);
     drawShowers(now,dt);
     frame=requestAnimationFrame(draw);
   }
   function resume(){
     if(frame)cancelAnimationFrame(frame);frame=0;lastFrame=0;
-    showers=[];sparks=[];rings=[];press=null;
+    showers=[];sparks=[];rings=[];constellations=[];press=null;
     if(motion&&motion.matches){ctx.clearRect(0,0,width,height);return;}
     if(!document.hidden)frame=requestAnimationFrame(draw);
   }
