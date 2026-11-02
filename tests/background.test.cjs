@@ -6,17 +6,17 @@ const vm = require('node:vm');
 function scene(reduced = false, storage = new Map(), random = Math.random) {
   const scripts = [...fs.readFileSync('index.html', 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)];
   const events = {}, frames = new Map();
-  let clock = 0, next = 0, strokes = 0, motionChange, labels = [];
+  let clock = 0, next = 0, strokes = 0, motionChange, labels = [], fonts = [], font = '';
   class Element {
     constructor(isBlank = true) { this.isBlank = isBlank; }
     matches() { return this.isBlank; }
   }
   const ctx = new Proxy({}, {get(_, key) {
     if (key === 'stroke') return () => strokes++;
-    if (key === 'fillText') return name => labels.push(name);
+    if (key === 'fillText') return name => {labels.push(name);fonts.push(font);};
     if (key === 'createLinearGradient' || key === 'createRadialGradient') return () => ({addColorStop() {}});
     return () => {};
-  }, set() { return true; }});
+  }, set(_,key,value) { if(key==='font')font=value;return true; }});
   const motion = {matches: reduced, addEventListener(_, fn) { motionChange = fn; }};
   const canvas = {getContext: () => ctx};
   const document = {hidden: false, getElementById: () => canvas, querySelector: () => null,
@@ -29,7 +29,7 @@ function scene(reduced = false, storage = new Map(), random = Math.random) {
     requestAnimationFrame(fn) { frames.set(++next, fn); return next; },
     cancelAnimationFrame(id) { frames.delete(id); }});
   function frame(time) {
-    clock = time; strokes = 0; labels = [];
+    clock = time; strokes = 0; labels = []; fonts = [];
     const pending = [...frames.values()]; frames.clear();
     pending.forEach(fn => fn(clock)); return strokes;
   }
@@ -39,7 +39,7 @@ function scene(reduced = false, storage = new Map(), random = Math.random) {
     window.scrollY += scroll;
     events.pointerup({pointerId: 1, clientX: 190 + move, clientY: 450, target});
   }
-  return {frame, tap, frames, document, events, motion, window, labels: () => labels,
+  return {frame, tap, frames, document, events, motion, window, labels: () => labels, fonts: () => fonts,
     changeMotion(value) { motion.matches = value; motionChange(); }};
 }
 
@@ -62,7 +62,15 @@ test('zodiac taps can show all twelve names and never repeat the previous conste
     const names=s.labels();assert.equal(names.length,1);
     assert.notEqual(names[0],previous);previous=names[0];seen.add(names[0]);
   }
-  assert.deepEqual([...seen].sort(),['Koç','Boğa','İkizler','Yengeç','Aslan','Başak','Terazi','Akrep','Yay','Oğlak','Kova','Balık'].sort());
+  assert.deepEqual([...seen].sort(),['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpius','Sagittarius','Capricornus','Aquarius','Pisces'].sort());
+});
+
+test('zodiac labels scale proportionally from thirty percent to the previous full size',()=>{
+  for(const [random,expected] of [[0,3],[.5,6.5],[1-Number.EPSILON,10]]){
+    const s=scene(false,new Map(),()=>random);s.frame(100);s.tap();s.frame(1800);
+    assert.ok(Math.abs(parseFloat(s.fonts()[0])-expected)<1e-6);
+    assert.equal(s.labels().length,1);
+  }
 });
 
 test('reduced motion disables animation and hiding the app stops pending frames', () => {
