@@ -8,8 +8,8 @@ function scene(reduced = false, storage = new Map(), random = Math.random) {
   const events = {}, frames = new Map();
   let clock = 0, next = 0, strokes = 0, motionChange, labels = [], fonts = [], font = '';
   class Element {
-    constructor(isBlank = true) { this.isBlank = isBlank; }
-    matches() { return this.isBlank; }
+    constructor(isBlank = true, tag = 'body') { this.isBlank = isBlank; this.tag = tag; }
+    matches(selector) { return this.isBlank && selector.split(',').includes(this.tag); }
   }
   const ctx = new Proxy({}, {get(_, key) {
     if (key === 'stroke') return () => strokes++;
@@ -33,8 +33,8 @@ function scene(reduced = false, storage = new Map(), random = Math.random) {
     const pending = [...frames.values()]; frames.clear();
     pending.forEach(fn => fn(clock)); return strokes;
   }
-  function tap({blank = true, move = 0, scroll = 0} = {}) {
-    const target = new Element(blank);
+  function tap({blank = true, move = 0, scroll = 0, tag = 'body'} = {}) {
+    const target = new Element(blank, tag);
     events.pointerdown({isPrimary: true, button: 0, pointerId: 1, clientX: 190, clientY: 450, target});
     window.scrollY += scroll;
     events.pointerup({pointerId: 1, clientX: 190 + move, clientY: 450, target});
@@ -51,6 +51,13 @@ test('blank-space taps add a temporary meteor shower; controls and scroll gestur
   s.tap({scroll: 50}); assert.equal(s.frame(700), 42);
   s.tap(); assert.ok(s.frame(1000) > 42);
   assert.equal(s.frame(5000), 42);
+});
+
+test('blank root area still accepts taps after scrolling below the body; scrolling itself does not',()=>{
+  const s=scene();s.frame(100);s.window.scrollY=1500;
+  s.tap({tag:'html'});assert.ok(s.frame(1000)>42);
+  assert.equal(s.frame(5000),42);
+  s.tap({tag:'html',scroll:50});assert.equal(s.frame(5200),42);
 });
 
 test('zodiac taps can show all twelve names and never repeat the previous constellation', () => {
