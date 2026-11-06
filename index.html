@@ -56,6 +56,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .btn-start{background:var(--green);color:#fff;border:none;padding:12px 32px;border-radius:var(--r-sm);font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:opacity .2s}
 .btn-stop{background:var(--red);color:#fff;border:none;padding:12px 32px;border-radius:var(--r-sm);font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:opacity .2s}
 .btn-start:disabled,.btn-stop:disabled{opacity:.3;cursor:default}
+.btn-notify{display:block;margin:-.5rem auto 1rem;min-height:44px;padding:10px 16px;background:transparent;color:var(--text2);border:1px solid var(--border2);border-radius:var(--r-sm);font-size:13px;font-family:var(--sans);cursor:pointer}
+.btn-notify.on{color:var(--green);border-color:var(--green)}
+.btn-notify[hidden]{display:none}
 .btn-start:not(:disabled):active,.btn-stop:not(:disabled):active{opacity:.8;transform:scale(.97)}
 
 /* today info box inside timer card */
@@ -232,8 +235,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
           <button class="btn-start" id="btnStart" onclick="startTimer()">▶ Başlat</button>
           <button class="btn-stop" id="btnStop" onclick="stopTimer()" disabled>■ Kaydet</button>
         </div>
-        
-        
+        <button type="button" class="btn-notify" id="nativeNotifications" hidden onclick="nativeApp().toggleNotifications()"></button>
         <div class="today-info" id="todayInfo"></div>
       </div>
       <div id="planToday"></div>
@@ -312,7 +314,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 </div>
 
 <dialog id="workflowDialog" class="workflow-dialog" aria-labelledby="workflowTitle"><form id="workflowForm" onsubmit="saveWorkflow(event)"><div class="work-head"><h2 id="workflowTitle"></h2><button type="button" class="workflow-close" aria-label="Kapat" onclick="closeWorkflow()">×</button></div><div id="workflowBody"></div><p id="workflowError" class="plan-error" role="alert"></p><div class="workflow-footer"><button type="submit" id="workflowSave">Kaydet</button><button type="button" class="work-edit" onclick="closeWorkflow()">Vazgeç</button></div><div id="workflowExtra"></div></form></dialog>
-<script src="plan.js?v=20261102-1"></script>
+<script src="plan.js?v=20261106-1"></script>
 <script src="workflow.js?v=20261101-5"></script>
 <script>
 // store.dayTasks:   { "2025-04-21": [{text,done},...] }
@@ -354,7 +356,14 @@ function onNativeUpdate(){
   if(syncBusy)return;
   if(nativeApp())try{readNativeInfo();}catch(e){}
   if(!syncConflict)refreshCloud();else setSyncState('err');
-  var button=document.getElementById('nativeNotifications');if(button&&nativeApp())button.textContent=nativeApp().notifications()==='true'?'Kilit ekranı bildirimini kapat':'Kilit ekranı bildirimini aç';
+  renderNativeNotifications();
+}
+function renderNativeNotifications(){
+  var button=document.getElementById('nativeNotifications');if(!button)return;
+  if(!nativeApp()){button.hidden=true;return;}
+  var on=nativeApp().notifications()==='true';button.hidden=false;button.classList.toggle('on',on);
+  button.setAttribute('aria-pressed',String(on));
+  button.textContent=on?'🔔 Kilit ekranı bildirimi açık · Kapat':'🔕 Kilit ekranı bildirimini aç';
 }
 var STORE_FIELDS=['sessions','tasks','dayTasks','weekTasks','dayGoals','runningStart','runningPlan','runningCourse','studyPlan'];
 function syncClone(value){return JSON.parse(JSON.stringify(value));}
@@ -624,6 +633,7 @@ function calcStats(){
 
 // ── Render timer ──
 function renderTimerTab(){
+  renderNativeNotifications();
   var t=todayStr();
   var d=new Date();
   document.getElementById('timerDay').textContent=d.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});

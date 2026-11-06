@@ -174,7 +174,7 @@ public final class TimerInstrumentation extends Instrumentation {
       check(memory.data.getJSONObject("dayGoals").getInt(TimerModel.day(System.currentTimeMillis()))==5,"web queue preserves another devices goal update");
       waitJs(activity,"!pendingSync&&!syncBusy&&store.dayGoals[todayStr()]===5");
       js(activity,"document.querySelectorAll('.tab')[4].click();true");
-      check(js(activity,"document.getElementById('nativeNotifications')!==null").equals(true),"notification settings in plan tab");
+      check(js(activity,"document.getElementById('nativeNotifications')!==null").equals(true),"notification toggle in timer tab");
       js(activity,"document.querySelectorAll('.tab')[0].click();openWorkEditor();document.getElementById('workMinutes0').value='30';document.getElementById('workSeconds0').value='15';document.getElementById('workNote').value='Manual work test';saveWorkflow({preventDefault:function(){}});true");
       waitJs(activity,"!pendingSync&&!syncBusy&&!workflowSaving");Sync.executor.submit(()->{}).get(20,TimeUnit.SECONDS);
       check(js(activity,"secsForDay(todayStr())>=1815").equals(true),"manual duration entered inside APK");
