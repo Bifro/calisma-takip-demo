@@ -40,6 +40,16 @@ test('calendar and statistics color each day by its own target, independently of
   assert.doesNotMatch(tile('2026-11-02'),/goal-met|goal-missed/);
   assert.match(element('weekGrid').innerHTML, /class="wday today"/);
 });
+test('timer tab summary hides session targets whose deadline has passed',()=>{
+  const {c,element}=harness();c.initializeStudyPlan();
+  const plan=c.store.studyPlan,pediatri=plan.courses[0];
+  plan.sessionTargets.push({id:'target-later',courseStart:c.courseKey(pediatri),title:'Pediatri tekrar',total:4,from:'2026-11-05',deadline:'2026-11-09',schedule:[]});
+  c.todayStr=()=> '2026-11-06';c.renderStudyPlan();
+  assert.doesNotMatch(element('planToday').innerHTML,/Pediatri: 0 \/ 20/);
+  assert.match(element('planToday').innerHTML,/Pediatri tekrar: 0 \/ 4/);
+  c.todayStr=()=> '2026-11-03';c.renderStudyPlan();
+  assert.match(element('planToday').innerHTML,/Pediatri: 0 \/ 20/);
+});
 test('agreed schedule, goals and historical totals migrate once without duplicating work',()=>{
   const {c}=harness();c.store.sessions=[{date:'2026-10-27',duration:3600},{date:'2026-10-28',duration:9000}];
   c.store.dayGoals['2026-10-30']=3;

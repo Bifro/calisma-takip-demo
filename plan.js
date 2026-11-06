@@ -48,7 +48,7 @@ function planProgressFor(start,end){var first=targets()[0];return first?targetCo
 function renderStudyPlan(){
   var p=store.studyPlan,root=document.getElementById('planRoot');
   if(!p){root.innerHTML='<p class="empty">Planın yüklenmesi bekleniyor.</p>';return;}
-  var today=todayStr(),active=courseForDay(today),current=targets().filter(function(t){return !t.archived&&active&&t.courseStart===courseKey(active);});
+  var today=todayStr(),active=courseForDay(today),current=targets().filter(function(t){return !t.archived&&active&&t.courseStart===courseKey(active)&&!(t.deadline&&t.deadline<today);});
   document.getElementById('planToday').innerHTML='<div class="plan-card plan-mini"><strong>'+esc(active?active.name:p.exam)+'</strong><br>'+esc(DAY_TYPES[dayType(today)].name)+' · Bugünkü hedef: '+(store.dayGoals[today]!==undefined?fmtDur(store.dayGoals[today]*3600):goalRange(dayType(today)))
     +(current.length?'<br>'+current.map(function(t){var n=targetCompleted(t);return esc(t.title)+': '+n+(t.total!==null?' / '+esc(t.total)+' seans · '+Math.max(0,t.total-n)+' kaldı':' seans tamamlandı');}).join('<br>'):'')+'</div>';
   if(root.contains(document.activeElement))return;
